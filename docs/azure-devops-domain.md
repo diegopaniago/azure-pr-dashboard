@@ -49,6 +49,8 @@ organization:project:repositoryId:pullRequestId
 
 Comentários são descobertos lendo threads da PR. Comentários deletados são ignorados.
 
+As threads são consultadas a cada coleta para manter contagens e notificações de comentários atualizadas.
+
 Campos observados:
 
 - `thread.comments`
@@ -76,4 +78,3 @@ Do lado do reviewer, compara:
 - `reviewer.name`
 
 Esse ponto pode variar conforme configuração da organização no Azure DevOps. Se houver falso negativo, priorize adicionar fixtures em teste antes de alterar a regra.
-

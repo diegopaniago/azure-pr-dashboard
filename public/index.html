@@ -4,18 +4,33 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Azure PR Dashboard</title>
+    <link rel="icon" href="/azure-devops-glasses.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Azure DevOps</p>
-        <h1>Pull Requests para avaliar</h1>
-        <p class="subtitle">Acompanhe PRs em que você foi chamado diretamente, por time ou participou por comentários.</p>
+      <div class="brand-block">
+        <img class="brand-icon" src="/azure-devops-glasses.svg" alt="" aria-hidden="true">
+        <div>
+          <p class="eyebrow">Azure DevOps</p>
+          <h1>Pull Requests para avaliar</h1>
+          <p class="subtitle">Acompanhe PRs em que você foi chamado diretamente, por time ou participou por comentários.</p>
+        </div>
       </div>
       <div class="actions">
-        <button id="notifyButton" class="button secondary" type="button">Ativar notificações</button>
-        <button id="refreshButton" class="button primary" type="button">Atualizar agora</button>
+        <aside class="notification-center" aria-label="Notificações não vistas">
+          <button id="notificationBell" class="notification-bell" type="button" aria-expanded="false" aria-controls="notificationPanel" title="Notificações">
+            <span aria-hidden="true">🔔</span>
+            <span id="notificationCount" class="notification-count hidden">0</span>
+          </button>
+          <section id="notificationPanel" class="notification-panel hidden">
+            <header class="notification-panel-header">
+              <strong>Notificações</strong>
+              <button id="clearNotificationsButton" class="link-button" type="button">Limpar</button>
+            </header>
+            <div id="notificationList" class="notification-list"></div>
+          </section>
+        </aside>
       </div>
     </header>
 
@@ -25,8 +40,7 @@
           <span class="status-dot"></span>
           <strong>Monitoramento ativo</strong>
         </div>
-        <span>Atualiza a cada 5 minutos</span>
-        <span id="notificationStatus">Notificações: desativadas</span>
+        <span id="refreshFrequency">Atualiza em ...</span>
         <span id="lastUpdated">Última atualização: nunca</span>
       </section>
 
@@ -40,7 +54,7 @@
           Status
           <select id="statusFilter">
             <option value="all">Todos</option>
-            <option value="active">Active</option>
+            <option value="active" selected>Active</option>
             <option value="completed">Completed</option>
             <option value="abandoned">Abandoned</option>
           </select>

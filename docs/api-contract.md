@@ -21,6 +21,18 @@ Exemplo:
 }
 ```
 
+## GET /api/config
+
+Retorna configurações públicas usadas pelo frontend.
+
+Exemplo:
+
+```json
+{
+  "autoRefreshSeconds": 300
+}
+```
+
 ## GET /api/prs
 
 Retorna PRs envolvidas. Usa cache em memória quando disponível.
@@ -28,6 +40,14 @@ Retorna PRs envolvidas. Usa cache em memória quando disponível.
 ## GET /api/prs?refresh=true
 
 Força nova coleta e atualiza o cache.
+
+## GET /api/prs/stream
+
+Retorna PRs envolvidas via Server-Sent Events. Usa cache em memória quando disponível e envia cada PR em um evento separado.
+
+## GET /api/prs/stream?refresh=true
+
+Força nova coleta via Server-Sent Events e atualiza o cache ao final.
 
 ## Resposta de Sucesso
 
@@ -65,6 +85,7 @@ Força nova coleta e atualiza o cache.
       "reviewers": [],
       "commentCount": 4,
       "commentCountByUser": 1,
+      "commentsLoaded": true,
       "reviewerVote": 0,
       "lastActivityDate": "2026-07-12T09:00:00.000Z"
     }
@@ -72,6 +93,8 @@ Força nova coleta e atualiza o cache.
   "cached": false
 }
 ```
+
+Para PRs com repositório identificado, o backend consulta threads a cada coleta para manter `commentCount`, `commentCountByUser` e notificações de comentários atualizados.
 
 ## Resposta de Erro
 
@@ -84,3 +107,11 @@ Força nova coleta e atualiza o cache.
 
 Não inclua segredos em `details`.
 
+## Eventos do Stream
+
+Eventos enviados por `/api/prs/stream`:
+
+- `start`: metadados da coleta.
+- `pr`: uma PR relevante.
+- `done`: fim da coleta, com `generatedAt`, `count` e `cached`.
+- `failure`: erro resumido, com `error` e `details`.

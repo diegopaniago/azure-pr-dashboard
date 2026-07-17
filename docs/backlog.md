@@ -4,7 +4,6 @@ Esta lista registra melhorias úteis, mas não obrigatórias para o MVP atual. A
 
 ## Alta Prioridade
 
-- Reduzir custo de leitura de threads, consultando comentários apenas quando a PR ainda não for relevante por reviewer direto ou grupo.
 - Adicionar testes para casos reais de reviewer por grupo retornados pela organização.
 - Melhorar mensagens de erro por tipo: configuração ausente, autenticação inválida, permissão insuficiente e rate limit.
 
@@ -14,13 +13,13 @@ Esta lista registra melhorias úteis, mas não obrigatórias para o MVP atual. A
 - Persistir cache em arquivo local para sobreviver a restart do container.
 - Adicionar opção de ordenar tabela por data, status e repositório.
 - Criar filtro "Precisa da minha revisão" baseado em `reviewerVote`.
+- Criar modo diagnóstico para listar quantas chamadas foram feitas à API.
 
 ## Baixa Prioridade
 
 - Exportar lista filtrada em CSV.
 - Adicionar tema escuro.
 - Mostrar histórico local de mudanças detectadas.
-- Criar modo diagnóstico para listar quantas chamadas foram feitas à API.
 
 ## Não Fazer por Enquanto
 
@@ -28,4 +27,3 @@ Esta lista registra melhorias úteis, mas não obrigatórias para o MVP atual. A
 - Não adicionar banco de dados.
 - Não criar autenticação local.
 - Não expor PAT ou chamadas diretas ao Azure DevOps no navegador.
-

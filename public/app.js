@@ -1,17 +1,20 @@
-const AUTO_REFRESH_MS = 5 * 60 * 1000;
 const SNAPSHOT_KEY = 'azure-pr-dashboard:lastSnapshot';
+const NOTIFICATIONS_KEY = 'azure-pr-dashboard:notifications';
+const DEFAULT_AUTO_REFRESH_SECONDS = 300;
 
 const state = {
   prs: [],
   changedIds: new Set(),
+  unseenNotifications: [],
   firstLoad: true,
-  notificationEnabled: 'Notification' in window && Notification.permission === 'granted'
+  currentStream: null,
+  autoRefreshTimer: null,
+  autoRefreshSeconds: DEFAULT_AUTO_REFRESH_SECONDS,
+  refreshSecondsRemaining: DEFAULT_AUTO_REFRESH_SECONDS
 };
 
 const elements = {
-  refreshButton: document.querySelector('#refreshButton'),
-  notifyButton: document.querySelector('#notifyButton'),
-  notificationStatus: document.querySelector('#notificationStatus'),
+  refreshFrequency: document.querySelector('#refreshFrequency'),
   lastUpdated: document.querySelector('#lastUpdated'),
   errorBox: document.querySelector('#errorBox'),
   loadingBox: document.querySelector('#loadingBox'),
@@ -21,7 +24,12 @@ const elements = {
   involvementFilter: document.querySelector('#involvementFilter'),
   searchInput: document.querySelector('#searchInput'),
   prsTable: document.querySelector('#prsTable'),
-  emptyState: document.querySelector('#emptyState')
+  emptyState: document.querySelector('#emptyState'),
+  notificationBell: document.querySelector('#notificationBell'),
+  notificationCount: document.querySelector('#notificationCount'),
+  notificationPanel: document.querySelector('#notificationPanel'),
+  notificationList: document.querySelector('#notificationList'),
+  clearNotificationsButton: document.querySelector('#clearNotificationsButton')
 };
 
 function formatDate(value) {
@@ -56,6 +64,11 @@ function involvementLabels(involvement) {
   if (involvement.commented) labels.push(['commented', 'Comentei']);
   if (involvement.authored) labels.push(['authored', 'Autor']);
   return labels;
+}
+
+function formatCommentSummary(pr) {
+  if (!pr.commentsLoaded) return '-';
+  return `${escapeHtml(pr.commentCountByUser)} meus / ${escapeHtml(pr.commentCount)} total`;
 }
 
 function makeSnapshot(prs) {
@@ -100,19 +113,32 @@ function detectChanges(prs) {
   for (const pr of prs) {
     const previous = previousSnapshot[pr.id];
     if (!previous) {
-      changes.push({ pr, message: describeChange(pr, previous) });
+      changes.push({ pr, message: describeChange(pr, previous), type: 'new' });
       continue;
     }
 
-    const changed = previous.status !== pr.status
-      || previous.lastActivityDate !== pr.lastActivityDate
-      || previous.commentCount !== pr.commentCount
+    if (previous.status !== pr.status) {
+      changes.push({ pr, message: describeChange(pr, previous), type: 'status' });
+      continue;
+    }
+
+    if ((previous.commentCount || 0) < (pr.commentCount || 0)) {
+      changes.push({ pr, message: describeChange(pr, previous), type: 'comments' });
+      continue;
+    }
+
+    if (previous.lastActivityDate !== pr.lastActivityDate) {
+      changes.push({ pr, message: describeChange(pr, previous), type: 'activity' });
+      continue;
+    }
+
+    const changed = previous.commentCount !== pr.commentCount
       || previous.commentCountByUser !== pr.commentCountByUser
       || previous.reviewerVote !== pr.reviewerVote
       || !sameInvolvement(previous.involvement, pr.involvement);
 
     if (changed) {
-      changes.push({ pr, message: describeChange(pr, previous) });
+      changes.push({ pr, message: describeChange(pr, previous), type: 'involvement' });
     }
   }
 
@@ -120,34 +146,67 @@ function detectChanges(prs) {
   return changes;
 }
 
-function notifyChanges(changes) {
-  if (state.firstLoad || !state.notificationEnabled) return;
-
-  for (const change of changes.slice(0, 5)) {
-    const notification = new Notification('Nova atualização em PR', {
-      body: change.message,
-      tag: change.pr.id
-    });
-
-    notification.onclick = () => {
-      window.open(change.pr.url, '_blank', 'noopener');
-      notification.close();
-    };
+function readStoredNotifications() {
+  try {
+    const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '[]');
+    return Array.isArray(notifications) ? notifications : [];
+  } catch {
+    return [];
   }
 }
 
-function updateNotificationStatus() {
-  if (!('Notification' in window)) {
-    elements.notificationStatus.textContent = 'Notificações: indisponíveis';
-    elements.notifyButton.disabled = true;
+function saveStoredNotifications(notifications) {
+  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+}
+
+function addUnseenNotifications(changes) {
+  if (state.firstLoad || changes.length === 0) return;
+
+  const detectedAt = new Date().toISOString();
+  const newNotifications = changes.map((change, index) => ({
+    id: `${change.pr.id}:${Date.now()}:${index}`,
+    message: change.message,
+    url: change.pr.url,
+    detectedAt
+  }));
+
+  state.unseenNotifications = [
+    ...newNotifications,
+    ...state.unseenNotifications
+  ].slice(0, 50);
+
+  saveStoredNotifications(state.unseenNotifications);
+  renderNotificationCenter();
+}
+
+function clearUnseenNotifications() {
+  state.unseenNotifications = [];
+  saveStoredNotifications(state.unseenNotifications);
+  renderNotificationCenter();
+}
+
+function renderNotificationCenter() {
+  const count = state.unseenNotifications.length;
+
+  elements.notificationCount.textContent = String(Math.min(count, 99));
+  elements.notificationCount.classList.toggle('hidden', count === 0);
+
+  if (count === 0) {
+    elements.notificationList.innerHTML = '<div class="notification-empty">Nenhuma notificação nova.</div>';
     return;
   }
 
-  const status = Notification.permission;
-  state.notificationEnabled = status === 'granted';
-  elements.notificationStatus.textContent = `Notificações: ${state.notificationEnabled ? 'ativadas' : 'desativadas'}`;
-  elements.notifyButton.textContent = state.notificationEnabled ? 'Notificações ativadas' : 'Ativar notificações';
-  elements.notifyButton.disabled = state.notificationEnabled;
+  elements.notificationList.innerHTML = state.unseenNotifications.map((notification) => `
+    <a class="notification-item" href="${escapeHtml(notification.url)}" target="_blank" rel="noopener">
+      <strong>${escapeHtml(notification.message)}</strong>
+      <span>${formatDate(notification.detectedAt)}</span>
+    </a>
+  `).join('');
+}
+
+function toggleNotificationPanel() {
+  const isHidden = elements.notificationPanel.classList.toggle('hidden');
+  elements.notificationBell.setAttribute('aria-expanded', String(!isHidden));
 }
 
 function getFilteredPrs() {
@@ -227,7 +286,7 @@ function renderTable() {
         <td>${formatDate(pr.creationDate)}</td>
         <td>${formatDate(pr.closedDate)}</td>
         <td><div class="badges">${badges || '-'}</div></td>
-        <td>${escapeHtml(pr.commentCountByUser)} meus / ${escapeHtml(pr.commentCount)} total</td>
+        <td>${formatCommentSummary(pr)}</td>
         <td><a class="link" href="${escapeHtml(pr.url)}" target="_blank" rel="noopener">Abrir</a></td>
       </tr>
     `;
@@ -242,7 +301,6 @@ function renderAll() {
 
 function setLoading(isLoading) {
   elements.loadingBox.classList.toggle('hidden', !isLoading);
-  elements.refreshButton.disabled = isLoading;
 }
 
 function showError(message) {
@@ -255,7 +313,33 @@ function clearError() {
   elements.errorBox.classList.add('hidden');
 }
 
-async function loadPullRequests({ refresh = false } = {}) {
+function renderRefreshCountdown() {
+  const seconds = Math.max(0, state.refreshSecondsRemaining);
+  elements.refreshFrequency.textContent = `Atualiza em ${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}`;
+}
+
+function resetRefreshCountdown() {
+  state.refreshSecondsRemaining = state.autoRefreshSeconds;
+  renderRefreshCountdown();
+}
+
+function sortPrsByActivity(prs) {
+  return prs.sort((a, b) => new Date(b.lastActivityDate).getTime() - new Date(a.lastActivityDate).getTime());
+}
+
+function upsertPullRequest(pr) {
+  const currentIndex = state.prs.findIndex((current) => current.id === pr.id);
+
+  if (currentIndex >= 0) {
+    state.prs[currentIndex] = pr;
+  } else {
+    state.prs.push(pr);
+  }
+
+  sortPrsByActivity(state.prs);
+}
+
+async function loadPullRequestsWithFetch({ refresh = false } = {}) {
   setLoading(true);
   clearError();
 
@@ -271,7 +355,7 @@ async function loadPullRequests({ refresh = false } = {}) {
     state.changedIds = new Set(state.firstLoad ? [] : changes.map((change) => change.pr.id));
     state.prs = data.prs || [];
 
-    notifyChanges(changes);
+    addUnseenNotifications(changes);
     renderAll();
 
     elements.lastUpdated.textContent = `Última atualização: ${formatDate(data.generatedAt)}`;
@@ -283,12 +367,123 @@ async function loadPullRequests({ refresh = false } = {}) {
   }
 }
 
-elements.refreshButton.addEventListener('click', () => loadPullRequests({ refresh: true }));
-elements.notifyButton.addEventListener('click', async () => {
-  if (!('Notification' in window)) return;
-  await Notification.requestPermission();
-  updateNotificationStatus();
-});
+function loadPullRequests({ refresh = false } = {}) {
+  resetRefreshCountdown();
+
+  if (!('EventSource' in window)) {
+    loadPullRequestsWithFetch({ refresh });
+    return;
+  }
+
+  if (state.currentStream) {
+    state.currentStream.close();
+    state.currentStream = null;
+  }
+
+  const stream = new EventSource(`/api/prs/stream${refresh ? '?refresh=true' : ''}`);
+  let finished = false;
+
+  state.currentStream = stream;
+  state.prs = [];
+  state.changedIds = new Set();
+  setLoading(true);
+  clearError();
+  renderAll();
+  elements.lastUpdated.textContent = 'Coletando Pull Requests...';
+
+  stream.addEventListener('start', (event) => {
+    const data = JSON.parse(event.data);
+    elements.lastUpdated.textContent = data.cached
+      ? 'Carregando Pull Requests do cache...'
+      : 'Coletando Pull Requests...';
+  });
+
+  stream.addEventListener('pr', (event) => {
+    const pr = JSON.parse(event.data);
+    upsertPullRequest(pr);
+    renderAll();
+  });
+
+  stream.addEventListener('done', (event) => {
+    const data = JSON.parse(event.data);
+    finished = true;
+    stream.close();
+    state.currentStream = null;
+
+    const changes = detectChanges(state.prs);
+    state.changedIds = new Set(state.firstLoad ? [] : changes.map((change) => change.pr.id));
+    addUnseenNotifications(changes);
+    renderAll();
+
+    elements.lastUpdated.textContent = `Última atualização: ${formatDate(data.generatedAt)}`;
+    state.firstLoad = false;
+    setLoading(false);
+  });
+
+  stream.addEventListener('failure', (event) => {
+    const data = JSON.parse(event.data);
+    finished = true;
+    stream.close();
+    state.currentStream = null;
+    showError(data.details || data.error || 'Erro desconhecido.');
+    setLoading(false);
+  });
+
+  stream.onerror = () => {
+    if (finished) return;
+    finished = true;
+    stream.close();
+    state.currentStream = null;
+    showError('A conexão de atualização foi interrompida.');
+    setLoading(false);
+  };
+}
+
+async function loadConfig() {
+  try {
+    const response = await fetch('/api/config');
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.details || data.error || 'Erro desconhecido.');
+    }
+
+    return {
+      autoRefreshSeconds: Math.max(10, Number(data.autoRefreshSeconds) || DEFAULT_AUTO_REFRESH_SECONDS)
+    };
+  } catch {
+    return {
+      autoRefreshSeconds: DEFAULT_AUTO_REFRESH_SECONDS
+    };
+  }
+}
+
+async function startApp() {
+  const config = await loadConfig();
+
+  state.autoRefreshSeconds = config.autoRefreshSeconds;
+  state.refreshSecondsRemaining = config.autoRefreshSeconds;
+  state.unseenNotifications = readStoredNotifications();
+  renderNotificationCenter();
+  renderRefreshCountdown();
+  loadPullRequests();
+
+  if (state.autoRefreshTimer) {
+    clearInterval(state.autoRefreshTimer);
+  }
+
+  state.autoRefreshTimer = setInterval(() => {
+    state.refreshSecondsRemaining -= 1;
+    renderRefreshCountdown();
+
+    if (state.refreshSecondsRemaining <= 0) {
+      loadPullRequests({ refresh: true });
+    }
+  }, 1000);
+}
+
+elements.notificationBell.addEventListener('click', toggleNotificationPanel);
+elements.clearNotificationsButton.addEventListener('click', clearUnseenNotifications);
 
 for (const element of [
   elements.statusFilter,
@@ -299,6 +494,4 @@ for (const element of [
   element.addEventListener('input', renderTable);
 }
 
-updateNotificationStatus();
-loadPullRequests();
-setInterval(() => loadPullRequests({ refresh: true }), AUTO_REFRESH_MS);
+startApp();

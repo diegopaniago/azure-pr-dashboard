@@ -79,7 +79,18 @@ function collectCommentStats(threads, user) {
     commentCount,
     commentCountByUser,
     commented: commentCountByUser > 0,
-    lastCommentDate
+    lastCommentDate,
+    loaded: true
+  };
+}
+
+function emptyCommentStats() {
+  return {
+    commentCount: null,
+    commentCountByUser: null,
+    commented: false,
+    lastCommentDate: null,
+    loaded: false
   };
 }
 
@@ -92,9 +103,17 @@ function buildWebUrl(pr, organization, project) {
   return `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_git/${repoName}/pullrequest/${pr.pullRequestId}`;
 }
 
-function mapPr({ pr, threads, user, groups, organization, project }) {
+function isRepositoryAccessError(error) {
+  const message = String(error?.message || '');
+  return message.includes('respondeu 404')
+    && (
+      message.includes('GitRepositoryNotFoundException')
+      || message.includes('TF401019')
+    );
+}
+
+function mapPr({ pr, commentStats, user, groups, organization, project }) {
   const reviewers = pr.reviewers || [];
-  const commentStats = collectCommentStats(threads, user);
   const directReviewer = reviewers.some((reviewer) => identityMatches(reviewer, user));
   const groupReviewer = reviewers.some((reviewer) => groupMatches(reviewer, groups));
   const authored = identityMatches(pr.createdBy || {}, user);
@@ -133,9 +152,38 @@ function mapPr({ pr, threads, user, groups, organization, project }) {
     })),
     commentCount: commentStats.commentCount,
     commentCountByUser: commentStats.commentCountByUser,
+    commentsLoaded: commentStats.loaded,
     reviewerVote: getReviewerVote(reviewers, user),
     lastActivityDate
   };
+}
+
+async function mapRelevantPullRequest({ pr, user, groups, organization, project, client }) {
+  const repositoryId = pr.repository?.id;
+  const reviewers = pr.reviewers || [];
+  const directReviewer = reviewers.some((reviewer) => identityMatches(reviewer, user));
+  const groupReviewer = reviewers.some((reviewer) => groupMatches(reviewer, groups));
+  const authored = identityMatches(pr.createdBy || {}, user);
+
+  let commentStats = emptyCommentStats();
+
+  if (repositoryId) {
+    const threads = await client.listPullRequestThreads(repositoryId, pr.pullRequestId);
+    commentStats = collectCommentStats(threads, user);
+  }
+
+  if (!directReviewer && !groupReviewer && !authored && !commentStats.commented) {
+    return null;
+  }
+
+  return mapPr({
+    pr,
+    commentStats,
+    user,
+    groups,
+    organization,
+    project
+  });
 }
 
 export class PullRequestAggregator {
@@ -167,21 +215,29 @@ export class PullRequestAggregator {
     const byKey = new Map();
 
     for (const repository of repositories) {
-      for (const status of statuses) {
-        for (const queryTimeRangeType of timeRanges) {
-          if (status === 'active' && queryTimeRangeType === 'closed') continue;
+      try {
+        for (const status of statuses) {
+          for (const queryTimeRangeType of timeRanges) {
+            if (status === 'active' && queryTimeRangeType === 'closed') continue;
 
-          const prs = await this.client.listAllPullRequests({
-            repositoryId: repository.id,
-            status,
-            minTime,
-            queryTimeRangeType
-          });
+            const prs = await this.client.listAllPullRequests({
+              repositoryId: repository.id,
+              status,
+              minTime,
+              queryTimeRangeType
+            });
 
-          for (const pr of prs) {
-            byKey.set(`${repository.id}:${pr.pullRequestId}`, pr);
+            for (const pr of prs) {
+              byKey.set(`${repository.id}:${pr.pullRequestId}`, pr);
+            }
           }
         }
+      } catch (error) {
+        if (!isRepositoryAccessError(error)) {
+          throw error;
+        }
+
+        console.warn(`Ignorando repositório inacessível no Azure DevOps: ${repository.name || repository.id}`);
       }
     }
 
@@ -189,39 +245,62 @@ export class PullRequestAggregator {
   }
 
   async aggregate({ user, groups }) {
-    const repositories = await this.getTargetRepositories();
-    const rawPullRequests = await this.collectRawPullRequests(repositories);
     const relevantPullRequests = [];
 
-    for (const pr of rawPullRequests) {
-      const repositoryId = pr.repository?.id;
-      const reviewers = pr.reviewers || [];
-      const directReviewer = reviewers.some((reviewer) => identityMatches(reviewer, user));
-      const groupReviewer = reviewers.some((reviewer) => groupMatches(reviewer, groups));
-
-      let threads = [];
-      let commentStats = { commented: false };
-
-      if (repositoryId) {
-        threads = await this.client.listPullRequestThreads(repositoryId, pr.pullRequestId);
-        commentStats = collectCommentStats(threads, user);
-      }
-
-      const authored = identityMatches(pr.createdBy || {}, user);
-      if (!directReviewer && !groupReviewer && !commentStats.commented && !authored) {
-        continue;
-      }
-
-      relevantPullRequests.push(mapPr({
-        pr,
-        threads,
-        user,
-        groups,
-        organization: this.organization,
-        project: this.project
-      }));
+    for await (const pr of this.aggregateStream({ user, groups })) {
+      relevantPullRequests.push(pr);
     }
 
     return relevantPullRequests.sort((a, b) => toDateValue(b.lastActivityDate) - toDateValue(a.lastActivityDate));
+  }
+
+  async *aggregateStream({ user, groups }) {
+    const repositories = await this.getTargetRepositories();
+    const minTime = new Date(Date.now() - this.daysBack * 24 * 60 * 60 * 1000).toISOString();
+    const statuses = ['active', 'completed', 'abandoned'];
+    const timeRanges = ['created', 'closed'];
+    const seenKeys = new Set();
+
+    for (const repository of repositories) {
+      try {
+        for (const status of statuses) {
+          for (const queryTimeRangeType of timeRanges) {
+            if (status === 'active' && queryTimeRangeType === 'closed') continue;
+
+            const prs = await this.client.listAllPullRequests({
+              repositoryId: repository.id,
+              status,
+              minTime,
+              queryTimeRangeType
+            });
+
+            for (const pr of prs) {
+              const key = `${repository.id}:${pr.pullRequestId}`;
+              if (seenKeys.has(key)) continue;
+              seenKeys.add(key);
+
+              const mapped = await mapRelevantPullRequest({
+                pr,
+                user,
+                groups,
+                organization: this.organization,
+                project: this.project,
+                client: this.client
+              });
+
+              if (mapped) {
+                yield mapped;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        if (!isRepositoryAccessError(error)) {
+          throw error;
+        }
+
+        console.warn(`Ignorando repositório inacessível no Azure DevOps: ${repository.name || repository.id}`);
+      }
+    }
   }
 }

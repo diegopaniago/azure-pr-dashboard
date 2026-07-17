@@ -15,7 +15,27 @@ O frontend fica em `public/` e deve continuar simples, sem build step e sem fram
 - `prs`: lista atual de PRs;
 - `changedIds`: PRs destacadas após mudança;
 - `firstLoad`: evita notificação em massa na primeira carga;
-- `notificationEnabled`: reflete permissão da Browser Notification API.
+- `currentStream`: conexão Server-Sent Events ativa.
+
+## Sino de Notificações
+
+O sino no canto da tela guarda mudanças ainda não limpas pelo usuário. Ele usa `localStorage` com a chave:
+
+```txt
+azure-pr-dashboard:notifications
+```
+
+As notificações são criadas após o evento `done` da coleta, junto com a detecção de mudanças do snapshot. Não há popup nativo do navegador nem som; o registro fica apenas no sino interno.
+
+## Carregamento Progressivo
+
+A tela usa `/api/prs/stream` com `EventSource` para renderizar PRs conforme o backend classifica cada item. Se `EventSource` não estiver disponível no navegador, usa `/api/prs` como fallback.
+
+O snapshot e as notificações continuam sendo atualizados apenas no evento `done`, quando a coleta termina.
+
+## Atualização Automática
+
+A frequência de atualização vem de `/api/config`, que reflete `AUTO_REFRESH_SECONDS`. Se a config não puder ser carregada, o frontend usa `300` segundos. A barra de monitoramento mostra um countdown no formato `Atualiza em X segundos`.
 
 ## Snapshot
 
@@ -31,14 +51,11 @@ Campos comparados:
 - `lastActivityDate`
 - `commentCount`
 - `commentCountByUser`
+- `commentsLoaded`
 - `reviewerVote`
 - `involvement`
 
-## Notificações
-
-O navegador só pede permissão após clique em `Ativar notificações`. Notificações não são disparadas na primeira carga.
-
-Ao clicar na notificação, a PR é aberta em nova aba.
+Quando `commentsLoaded` é `false`, a tabela exibe `-`. Em coletas normais de PRs com repositório identificado, esse campo vem como `true`.
 
 ## Cuidados de UI
 
@@ -46,4 +63,3 @@ Ao clicar na notificação, a PR é aberta em nova aba.
 - Não use texto muito longo dentro de botões.
 - Escape dados vindos da API antes de renderizar HTML.
 - Preserve tabela responsiva com rolagem horizontal para telas pequenas.
-

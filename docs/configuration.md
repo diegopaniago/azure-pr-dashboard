@@ -12,7 +12,7 @@ O projeto é configurado por variáveis de ambiente. Em desenvolvimento local, u
 | `AZURE_DEVOPS_USER_EMAIL` | Sim | - | E-mail do usuário monitorado. |
 | `DAYS_BACK` | Não | `60` | Janela de dias para buscar PRs. |
 | `PORT` | Não | `3000` | Porta local do dashboard. |
-| `CACHE_TTL_SECONDS` | Não | `300` | Tempo de vida do cache em memória. |
+| `AUTO_REFRESH_SECONDS` | Não | `300` | Frequência de atualização automática no navegador e tempo de vida do cache em memória. |
 | `AZURE_DEVOPS_REPOSITORIES` | Não | vazio | Lista opcional de repositórios separados por vírgula. |
 
 ## PAT
@@ -36,3 +36,12 @@ docker compose up --build
 
 Sem `.env`, o serviço sobe, mas `/api/prs` falhará por falta de configuração.
 
+## Execução Local com Node.js
+
+Ao iniciar, o servidor carrega `.env` automaticamente quando o arquivo existe e dá prioridade aos valores do arquivo local:
+
+```bash
+npm run dev
+```
+
+Sem `.env`, o servidor sobe, mas `/api/prs` falhará por falta de configuração.

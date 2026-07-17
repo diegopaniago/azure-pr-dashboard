@@ -8,9 +8,9 @@ Dashboard local em JavaScript puro, HTML e CSS para acompanhar Pull Requests do 
 - Considera PRs criadas ou fechadas dentro da janela configurada.
 - Identifica envolvimento por reviewer direto, grupo/time, comentários e autoria.
 - Filtra por status, repositório, tipo de envolvimento e texto livre.
-- Atualiza automaticamente a cada 5 minutos.
-- Permite atualização manual com `Atualizar agora`.
-- Usa Browser Notification API para avisar mudanças relevantes após permissão explícita.
+- Renderiza PRs progressivamente conforme o backend recebe resultados.
+- Atualiza automaticamente conforme `AUTO_REFRESH_SECONDS`.
+- Usa sino interno para guardar mudanças detectadas ainda não limpas.
 - Mantém snapshot local em `localStorage` com a chave `azure-pr-dashboard:lastSnapshot`.
 - Usa Node.js 24 no Docker.
 
@@ -31,7 +31,7 @@ AZURE_DEVOPS_PAT=seu_pat
 AZURE_DEVOPS_USER_EMAIL=seu.email@empresa.com
 DAYS_BACK=60
 PORT=3000
-CACHE_TTL_SECONDS=300
+AUTO_REFRESH_SECONDS=300
 ```
 
 Opcionalmente limite os repositórios consultados:
@@ -53,11 +53,19 @@ Dependendo das políticas da organização, pode ser necessário ajustar escopos
 
 ## Execução
 
-Rode:
+Com Docker Compose, rode:
 
 ```bash
 docker compose up --build
 ```
+
+Para desenvolvimento local com Node.js, rode:
+
+```bash
+npm run dev
+```
+
+Ao iniciar, o servidor carrega o arquivo `.env` quando ele existir e dá prioridade aos valores do arquivo local.
 
 Abra:
 
@@ -91,13 +99,15 @@ npm test
 GET /api/health
 GET /api/prs
 GET /api/prs?refresh=true
+GET /api/prs/stream
+GET /api/prs/stream?refresh=true
 ```
 
-`refresh=true` ignora o cache em memória. O TTL padrão é `300` segundos e pode ser alterado por `CACHE_TTL_SECONDS`.
+`refresh=true` ignora o cache em memória. `AUTO_REFRESH_SECONDS` define tanto a frequência de atualização automática do navegador quanto o tempo de vida do cache em memória; o padrão é `300` segundos.
 
 ## Limitações conhecidas
 
-A detecção de comentários exige consultar threads PR por PR. Em projetos com muitos repositórios e muitas PRs recentes, isso pode deixar a primeira carga mais lenta e aumentar o consumo da API do Azure DevOps. Para reduzir custo, use `AZURE_DEVOPS_REPOSITORIES` quando possível.
+A detecção de comentários consulta threads das PRs candidatas a cada coleta para manter contagens e notificações atualizadas. Em projetos com muitos repositórios e muitas PRs recentes, isso pode deixar a primeira carga mais lenta e aumentar o consumo da API do Azure DevOps. Para reduzir custo, use `AZURE_DEVOPS_REPOSITORIES` quando possível.
 
 A identificação de reviewer por grupo depende dos identificadores retornados pelas APIs Graph e Git do Azure DevOps. Em algumas organizações, times e grupos podem aparecer com formatos diferentes; nesses casos pode ser necessário ajustar a comparação de identidades.
 
