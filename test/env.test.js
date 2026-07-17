@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { loadDotEnv } from '../src/env.js';
 
-test('loadDotEnv sobrescreve variáveis herdadas com valores do arquivo local', () => {
+test('loadDotEnv overrides inherited variables with local file values', () => {
   const originalValue = process.env.AZURE_DEVOPS_PAT;
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'azure-pr-dashboard-'));
   const envPath = path.join(tempDir, '.env');

@@ -1,29 +1,29 @@
-# Backlog Técnico
+# Technical Backlog
 
-Esta lista registra melhorias úteis, mas não obrigatórias para o MVP atual. Antes de implementar, valide se o ganho compensa a complexidade.
+This list records useful but non-required improvements for the current MVP. Before implementing, validate whether the gain is worth the complexity.
 
-## Alta Prioridade
+## High Priority
 
-- Adicionar testes para casos reais de reviewer por grupo retornados pela organização.
-- Melhorar mensagens de erro por tipo: configuração ausente, autenticação inválida, permissão insuficiente e rate limit.
+- Add tests for real group reviewer cases returned by the organization.
+- Improve error messages by type: missing configuration, invalid authentication, insufficient permission, and rate limit.
 
-## Média Prioridade
+## Medium Priority
 
-- Adicionar endpoint opcional para detalhes de uma PR.
-- Persistir cache em arquivo local para sobreviver a restart do container.
-- Adicionar opção de ordenar tabela por data, status e repositório.
-- Criar filtro "Precisa da minha revisão" baseado em `reviewerVote`.
-- Criar modo diagnóstico para listar quantas chamadas foram feitas à API.
+- Add an optional endpoint for PR details.
+- Persist cache to a local file so it survives container restarts.
+- Add table sorting by date, status, and repository.
+- Create a "Needs my review" filter based on `reviewerVote`.
+- Create a diagnostic mode that lists how many API calls were made.
 
-## Baixa Prioridade
+## Low Priority
 
-- Exportar lista filtrada em CSV.
-- Adicionar tema escuro.
-- Mostrar histórico local de mudanças detectadas.
+- Export the filtered list as CSV.
+- Add a dark theme.
+- Show local history of detected changes.
 
-## Não Fazer por Enquanto
+## Do Not Do For Now
 
-- Não migrar para framework frontend.
-- Não adicionar banco de dados.
-- Não criar autenticação local.
-- Não expor PAT ou chamadas diretas ao Azure DevOps no navegador.
+- Do not migrate to a frontend framework.
+- Do not add a database.
+- Do not create local authentication.
+- Do not expose the PAT or direct Azure DevOps calls in the browser.

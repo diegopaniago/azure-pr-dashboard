@@ -1,20 +1,20 @@
-# Instruções para Agentes de IA
+# AI Agent Instructions
 
-Este projeto é um dashboard local para acompanhar Pull Requests do Azure DevOps em que o usuário está envolvido. Ao atuar aqui, preserve a simplicidade do produto: backend Node.js com Express, frontend com JavaScript puro, HTML e CSS, execução via Docker e nenhum framework frontend.
+This project is a local dashboard for tracking Azure DevOps Pull Requests where the user is involved. Preserve the product's simplicity: Node.js backend with Express, plain JavaScript/HTML/CSS frontend, Docker execution, and no frontend framework.
 
-## Regras Gerais
+## General Rules
 
-- Escreva sempre em português brasileiro.
-- Use commits semânticos no padrão Conventional Commits.
-- Evite descrições longas quando uma explicação direta resolver.
-- Mantenha o PAT do Azure DevOps somente no backend e em variáveis de ambiente.
-- Não exponha segredos no frontend, em logs, documentação ou exemplos preenchidos.
-- Não adicione React, Vue, Angular, Vite, Next.js ou bibliotecas frontend.
-- Não adicione bibliotecas de teste; use `node:test` e `node:assert/strict`.
-- Prefira mudanças pequenas, testáveis e alinhadas aos módulos existentes.
-- Antes de alterar comportamento de coleta de PRs, leia `docs/architecture.md` e `docs/azure-devops-domain.md`.
+- Write repository code and documentation in English.
+- Use semantic commits following the Conventional Commits standard.
+- Avoid long descriptions when a direct explanation is enough.
+- Keep the Azure DevOps PAT only in backend code and environment variables.
+- Do not expose secrets in frontend code, logs, documentation, or filled examples.
+- Do not add React, Vue, Angular, Vite, Next.js, or frontend libraries.
+- Do not add test libraries; use `node:test` and `node:assert/strict`.
+- Prefer small, testable changes aligned with the existing modules.
+- Before changing PR collection behavior, read `docs/architecture.md` and `docs/azure-devops-domain.md`.
 
-## Comandos Úteis
+## Useful Commands
 
 ```bash
 npm test
@@ -22,46 +22,45 @@ docker compose config
 docker compose up --build
 ```
 
-## Estrutura Principal
+## Main Structure
 
-- `src/server.js`: servidor Express, endpoints e cache.
-- `src/azureDevOpsClient.js`: cliente HTTP do Azure DevOps.
-- `src/identityResolver.js`: resolução do usuário e grupos.
-- `src/prAggregator.js`: regra de coleta, deduplicação e classificação das PRs.
-- `src/cache.js`: cache simples em memória.
-- `public/app.js`: estado, filtros, renderização, auto-refresh e notificações.
-- `public/styles.css`: design visual do dashboard.
-- `test/`: testes unitários com runner nativo do Node.js.
-- `docs/`: documentação para manutenção e evolução.
+- `src/server.js`: Express server, endpoints, and cache.
+- `src/azureDevOpsClient.js`: Azure DevOps HTTP client.
+- `src/identityResolver.js`: user and group resolution.
+- `src/prAggregator.js`: PR collection, deduplication, and classification rules.
+- `src/cache.js`: simple in-memory cache.
+- `public/app.js`: state, filters, rendering, auto-refresh, language switch, and notifications.
+- `public/styles.css`: dashboard visual design.
+- `test/`: unit tests using the native Node.js runner.
+- `docs/`: maintenance and evolution documentation.
 
-## Critérios de Qualidade
+## Quality Criteria
 
-- Toda mudança em regra de envolvimento deve ter teste em `test/prAggregator.test.js`.
-- Toda mudança em URL, paginação ou autenticação deve ter teste em `test/azureDevOpsClient.test.js`.
-- Toda mudança em cache deve ter teste em `test/cache.test.js`.
-- Se alterar a UI, valide estados de loading, erro, lista vazia e filtros.
-- Se alterar variáveis de ambiente, atualize `.env.example`, `README.md` e `docs/configuration.md`.
+- Every involvement rule change must have coverage in `test/prAggregator.test.js`.
+- Every URL, pagination, or authentication change must have coverage in `test/azureDevOpsClient.test.js`.
+- Every cache change must have coverage in `test/cache.test.js`.
+- If you change the UI, validate loading, error, empty-list, language switch, and filter states.
+- If you change environment variables, update `.env.example`, `README.md`, and `docs/configuration.md`.
 
-## Segurança
+## Security
 
-- Nunca faça commit de `.env`.
-- Nunca coloque valor real de `AZURE_DEVOPS_PAT` em documentação.
-- Evite registrar URLs com credenciais ou respostas completas de erro que possam conter dados sensíveis.
-- O frontend deve consumir apenas endpoints locais e nunca falar direto com Azure DevOps.
+- Never commit `.env`.
+- Never put a real `AZURE_DEVOPS_PAT` value in documentation.
+- Avoid logging credential-bearing URLs or full error responses that may contain sensitive data.
+- The frontend must consume only local endpoints and never call Azure DevOps directly.
 
-## Estilo de Código
+## Code Style
 
-- Projeto em ESM, com `import` e `export`.
-- Use APIs nativas do Node.js 24 sempre que possível.
-- Mantenha funções puras quando viável, especialmente em regras de classificação.
-- Use nomes explícitos para flags de envolvimento: `directReviewer`, `groupReviewer`, `commented`, `authored`.
-- Evite abstrações prematuras. Extraia função apenas quando reduzir duplicação real ou isolar regra importante.
+- The project uses ESM with `import` and `export`.
+- Use native Node.js 24 APIs whenever possible.
+- Keep functions pure when practical, especially classification rules.
+- Use explicit names for involvement flags: `directReviewer`, `groupReviewer`, `commented`, `authored`.
+- Avoid premature abstractions. Extract functions only when they reduce real duplication or isolate an important rule.
 
-## Fluxo Recomendado para Mudanças
+## Recommended Change Flow
 
-1. Entenda o requisito e identifique se é backend, frontend, documentação ou teste.
-2. Leia os arquivos diretamente relacionados.
-3. Altere o menor conjunto de arquivos necessário.
-4. Rode `npm test`.
-5. Atualize documentação quando comportamento, configuração ou contrato mudar.
-
+1. Understand the requirement and identify whether it affects backend, frontend, documentation, or tests.
+2. Read the directly related files.
+3. Change the smallest necessary set of files.
+4. Run `npm test`.
+5. Update documentation when behavior, configuration, or contracts change.

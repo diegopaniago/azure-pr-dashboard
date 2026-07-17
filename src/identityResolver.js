@@ -4,7 +4,7 @@ function normalize(value) {
 
 export async function resolveIdentity(client, userEmail) {
   if (!userEmail) {
-    throw new Error('AZURE_DEVOPS_USER_EMAIL não foi configurado.');
+    throw new Error('AZURE_DEVOPS_USER_EMAIL was not configured.');
   }
 
   const users = await client.findUsersByEmail(userEmail);
@@ -14,7 +14,7 @@ export async function resolveIdentity(client, userEmail) {
   }) || users[0];
 
   if (!user) {
-    throw new Error(`Usuário não encontrado no Azure DevOps para o e-mail ${userEmail}.`);
+    throw new Error(`User not found in Azure DevOps for email ${userEmail}.`);
   }
 
   const memberships = await client.getMemberships(user.descriptor);

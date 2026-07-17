@@ -1,7 +1,7 @@
 {
   "name": "azure-pr-dashboard",
   "version": "0.1.0",
-  "description": "Dashboard local para acompanhar Pull Requests do Azure DevOps.",
+  "description": "Local dashboard for tracking Azure DevOps Pull Requests.",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

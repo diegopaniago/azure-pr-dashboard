@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT || 3999);
 const organization = process.env.AZURE_DEVOPS_ORG;
 const project = process.env.AZURE_DEVOPS_PROJECT;
 const userEmail = process.env.AZURE_DEVOPS_USER_EMAIL;
@@ -106,7 +106,7 @@ app.get('/api/prs', async (req, res) => {
     res.json({ ...payload, cached: false });
   } catch (error) {
     res.status(500).json({
-      error: 'Não foi possível carregar as Pull Requests.',
+      error: 'Could not load Pull Requests.',
       details: error.message
     });
   }
@@ -197,7 +197,7 @@ app.get('/api/prs/stream', async (req, res) => {
   } catch (error) {
     if (!closed) {
       sendEvent(res, 'failure', {
-        error: 'Não foi possível carregar as Pull Requests.',
+        error: 'Could not load Pull Requests.',
         details: error.message
       });
       res.end();
@@ -206,5 +206,5 @@ app.get('/api/prs/stream', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Azure PR Dashboard disponível em http://localhost:${port}`);
+  console.log(`Azure PR Dashboard available at http://localhost:${port}`);
 });

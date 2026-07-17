@@ -105,7 +105,7 @@ function buildWebUrl(pr, organization, project) {
 
 function isRepositoryAccessError(error) {
   const message = String(error?.message || '');
-  return message.includes('respondeu 404')
+  return message.includes('responded with 404')
     && (
       message.includes('GitRepositoryNotFoundException')
       || message.includes('TF401019')
@@ -128,10 +128,10 @@ function mapPr({ pr, commentStats, user, groups, organization, project }) {
     pullRequestId: pr.pullRequestId,
     title: pr.title,
     status: pr.status,
-    repository: pr.repository?.name || pr.repository?.id || 'Repositório desconhecido',
+    repository: pr.repository?.name || pr.repository?.id || 'Unknown repository',
     repositoryId: pr.repository?.id,
     project,
-    createdBy: pr.createdBy?.displayName || pr.createdBy?.uniqueName || 'Autor desconhecido',
+    createdBy: pr.createdBy?.displayName || pr.createdBy?.uniqueName || 'Unknown author',
     creationDate: pr.creationDate,
     closedDate: pr.closedDate || null,
     sourceBranch: compactBranchName(pr.sourceRefName),
@@ -237,7 +237,7 @@ export class PullRequestAggregator {
           throw error;
         }
 
-        console.warn(`Ignorando repositório inacessível no Azure DevOps: ${repository.name || repository.id}`);
+        console.warn(`Ignoring inaccessible Azure DevOps repository: ${repository.name || repository.id}`);
       }
     }
 
@@ -299,7 +299,7 @@ export class PullRequestAggregator {
           throw error;
         }
 
-        console.warn(`Ignorando repositório inacessível no Azure DevOps: ${repository.name || repository.id}`);
+        console.warn(`Ignoring inaccessible Azure DevOps repository: ${repository.name || repository.id}`);
       }
     }
   }

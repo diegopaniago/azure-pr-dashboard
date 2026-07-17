@@ -1,12 +1,12 @@
-# Contrato da API Local
+# Local API Contract
 
-A API local é consumida pelo frontend em `public/app.js`. Alterações neste contrato devem ser acompanhadas de ajuste na UI e testes unitários quando afetarem regra de negócio.
+The local API is consumed by the frontend in `public/app.js`. Contract changes must be paired with UI updates and unit tests when they affect business rules.
 
 ## GET /api/health
 
-Retorna estado básico do serviço e se as variáveis principais foram configuradas.
+Returns basic service state and whether the main variables are configured.
 
-Exemplo:
+Example:
 
 ```json
 {
@@ -23,9 +23,9 @@ Exemplo:
 
 ## GET /api/config
 
-Retorna configurações públicas usadas pelo frontend.
+Returns public configuration used by the frontend.
 
-Exemplo:
+Example:
 
 ```json
 {
@@ -35,47 +35,47 @@ Exemplo:
 
 ## GET /api/prs
 
-Retorna PRs envolvidas. Usa cache em memória quando disponível.
+Returns involved PRs. Uses the in-memory cache when available.
 
 ## GET /api/prs?refresh=true
 
-Força nova coleta e atualiza o cache.
+Forces a new collection and refreshes the cache.
 
 ## GET /api/prs/stream
 
-Retorna PRs envolvidas via Server-Sent Events. Usa cache em memória quando disponível e envia cada PR em um evento separado.
+Returns involved PRs through Server-Sent Events. Uses the in-memory cache when available and sends each PR as a separate event.
 
 ## GET /api/prs/stream?refresh=true
 
-Força nova coleta via Server-Sent Events e atualiza o cache ao final.
+Forces a new collection through Server-Sent Events and refreshes the cache at the end.
 
-## Resposta de Sucesso
+## Success Response
 
 ```json
 {
   "generatedAt": "2026-07-17T12:00:00.000Z",
   "daysBack": 60,
-  "organization": "minha-org",
-  "project": "meu-projeto",
+  "organization": "my-org",
+  "project": "my-project",
   "user": {
-    "displayName": "Nome do Usuario",
-    "uniqueName": "usuario@empresa.com"
+    "displayName": "User Name",
+    "uniqueName": "user@company.com"
   },
   "prs": [
     {
-      "id": "minha-org:meu-projeto:repo-id:123",
+      "id": "my-org:my-project:repo-id:123",
       "pullRequestId": 123,
-      "title": "Ajuste de validacao",
+      "title": "Adjust validation",
       "status": "active",
       "repository": "api",
       "repositoryId": "repo-id",
-      "project": "meu-projeto",
-      "createdBy": "Pessoa Autora",
+      "project": "my-project",
+      "createdBy": "Author Person",
       "creationDate": "2026-07-10T10:00:00.000Z",
       "closedDate": null,
-      "sourceBranch": "feature/validacao",
+      "sourceBranch": "feature/validation",
       "targetBranch": "main",
-      "url": "https://dev.azure.com/minha-org/meu-projeto/_git/api/pullrequest/123",
+      "url": "https://dev.azure.com/my-org/my-project/_git/api/pullrequest/123",
       "involvement": {
         "directReviewer": true,
         "groupReviewer": false,
@@ -94,24 +94,24 @@ Força nova coleta via Server-Sent Events e atualiza o cache ao final.
 }
 ```
 
-Para PRs com repositório identificado, o backend consulta threads a cada coleta para manter `commentCount`, `commentCountByUser` e notificações de comentários atualizados.
+For PRs with an identified repository, the backend queries threads on every collection to keep `commentCount`, `commentCountByUser`, and comment notifications current.
 
-## Resposta de Erro
+## Error Response
 
 ```json
 {
-  "error": "Não foi possível carregar as Pull Requests.",
-  "details": "Mensagem técnica resumida"
+  "error": "Could not load Pull Requests.",
+  "details": "Short technical message"
 }
 ```
 
-Não inclua segredos em `details`.
+Do not include secrets in `details`.
 
-## Eventos do Stream
+## Stream Events
 
-Eventos enviados por `/api/prs/stream`:
+Events sent by `/api/prs/stream`:
 
-- `start`: metadados da coleta.
-- `pr`: uma PR relevante.
-- `done`: fim da coleta, com `generatedAt`, `count` e `cached`.
-- `failure`: erro resumido, com `error` e `details`.
+- `start`: collection metadata.
+- `pr`: one relevant PR.
+- `done`: collection completion with `generatedAt`, `count`, and `cached`.
+- `failure`: summarized error with `error` and `details`.

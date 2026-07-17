@@ -18,7 +18,7 @@ export class AzureDevOpsClient {
     if (!this.pat) missing.push('AZURE_DEVOPS_PAT');
 
     if (missing.length > 0) {
-      throw new Error(`Variáveis obrigatórias ausentes: ${missing.join(', ')}`);
+      throw new Error(`Missing required variables: ${missing.join(', ')}`);
     }
   }
 
@@ -36,7 +36,7 @@ export class AzureDevOpsClient {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(`Azure DevOps respondeu ${response.status} para ${url}: ${body.slice(0, 500)}`);
+      throw new Error(`Azure DevOps responded with ${response.status} for ${url}: ${body.slice(0, 500)}`);
     }
 
     if (response.status === 204) return null;

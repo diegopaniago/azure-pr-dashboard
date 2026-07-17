@@ -1,15 +1,15 @@
-# Arquitetura
+# Architecture
 
-O Azure PR Dashboard é uma aplicação local composta por um backend Express e um frontend estático em JavaScript puro. O backend concentra toda comunicação com Azure DevOps para proteger o PAT, enquanto o frontend consome apenas endpoints locais, renderiza a experiência do usuário e mantém o snapshot usado para detectar mudanças.
+Azure PR Dashboard is a local app composed of an Express backend and a static plain JavaScript frontend. The backend owns all Azure DevOps communication to protect the PAT, while the frontend consumes only local endpoints, renders the user experience, and keeps the snapshot used to detect changes.
 
-## Visão Geral
+## Overview
 
 ```txt
 Browser
   |
   | GET /api/prs
   v
-Express local
+Local Express
   |
   | Azure DevOps REST API
   v
@@ -18,56 +18,56 @@ Azure DevOps
 
 ## Backend
 
-O backend fica em `src/` e expõe:
+The backend lives in `src/` and exposes:
 
-- `GET /api/health`: indica se as variáveis principais estão configuradas.
-- `GET /api/config`: retorna configurações públicas do frontend.
-- `GET /api/prs`: retorna PRs envolvidas, usando cache quando disponível.
-- `GET /api/prs?refresh=true`: ignora o cache e força nova coleta.
-- `GET /api/prs/stream`: envia PRs progressivamente via Server-Sent Events.
-- `GET /api/prs/stream?refresh=true`: força nova coleta progressiva.
+- `GET /api/health`: indicates whether the main variables are configured.
+- `GET /api/config`: returns public frontend configuration.
+- `GET /api/prs`: returns involved PRs, using cache when available.
+- `GET /api/prs?refresh=true`: bypasses cache and forces a new collection.
+- `GET /api/prs/stream`: sends PRs progressively through Server-Sent Events.
+- `GET /api/prs/stream?refresh=true`: forces a new progressive collection.
 
-Responsabilidades:
+Responsibilities:
 
-- Autenticar no Azure DevOps via Basic Auth com PAT.
-- Resolver usuário por e-mail.
-- Resolver grupos do usuário.
-- Buscar repositórios do projeto.
-- Buscar PRs dos últimos `DAYS_BACK` dias por status e janela de tempo.
-- Consultar threads das PRs candidatas para atualizar comentários.
-- Deduplicar PRs.
-- Classificar envolvimento.
+- Authenticate with Azure DevOps using Basic Auth and PAT.
+- Resolve the user by email.
+- Resolve the user's groups.
+- Fetch project repositories.
+- Fetch PRs from the last `DAYS_BACK` days by status and time window.
+- Query candidate PR threads to refresh comments.
+- Deduplicate PRs.
+- Classify involvement.
 
 ## Frontend
 
-O frontend fica em `public/` e não usa framework. Ele consome `/api/prs/stream` para renderizar resultados conforme chegam, mantém `/api/prs` como fallback, aplica filtros locais e gerencia notificações.
+The frontend lives in `public/` and does not use a framework. It consumes `/api/prs/stream` to render results as they arrive, keeps `/api/prs` as a fallback, applies local filters, switches language between English and Brazilian Portuguese, and manages notifications.
 
-Responsabilidades:
+Responsibilities:
 
-- Mostrar loading, erro e estado vazio.
-- Renderizar cards de resumo.
-- Filtrar por status, repositório, envolvimento e texto livre.
-- Atualizar automaticamente conforme `AUTO_REFRESH_SECONDS`.
-- Manter snapshot em `localStorage`.
-- Notificar mudanças relevantes após permissão explícita.
+- Show loading, error, and empty states.
+- Render summary cards.
+- Filter by status, repository, involvement, and free text.
+- Refresh automatically according to `AUTO_REFRESH_SECONDS`.
+- Keep a snapshot in `localStorage`.
+- Keep relevant changes in the internal notification bell.
 
-## Fluxo de Coleta
+## Collection Flow
 
-1. `server.js` recebe `GET /api/prs/stream` ou `GET /api/prs`.
-2. Se cache válido existir e `refresh=true` não foi informado, retorna cache.
-3. `identityResolver.js` busca usuário e grupos.
-4. `prAggregator.js` lista repositórios.
-5. Para cada repositório, busca PRs `active`, `completed` e `abandoned`.
-6. Para PRs fechadas, considera também janela `closed`.
-7. Deduplica por `repositoryId:pullRequestId`.
-8. Consulta threads das PRs candidatas para contar comentários e descobrir comentários do usuário.
-9. Mantém apenas PRs com envolvimento direto, por grupo, por comentário ou autoria.
-10. No stream, envia cada PR assim que ela é classificada.
-11. Ao final, atualiza cache e mantém a lista final ordenada por `lastActivityDate`.
+1. `server.js` receives `GET /api/prs/stream` or `GET /api/prs`.
+2. If a valid cache exists and `refresh=true` was not provided, return cache.
+3. `identityResolver.js` fetches user and groups.
+4. `prAggregator.js` lists repositories.
+5. For each repository, fetch `active`, `completed`, and `abandoned` PRs.
+6. For closed PRs, also consider the `closed` window.
+7. Deduplicate by `repositoryId:pullRequestId`.
+8. Query candidate PR threads to count comments and find user comments.
+9. Keep only PRs with direct, group, comment, or author involvement.
+10. In the stream, send each PR as soon as it is classified.
+11. At the end, refresh cache and keep the final list sorted by `lastActivityDate`.
 
-## Pontos de Atenção
+## Attention Points
 
-- A consulta de threads é a parte mais cara da coleta, mas mantém contagens e notificações de comentários atualizadas.
-- O cache atual é em memória e reinicia junto com o processo.
-- A comparação de grupos depende dos formatos retornados pelas APIs Graph e Git.
-- O snapshot de mudanças fica no navegador, portanto é por usuário/browser.
+- Thread queries are the most expensive part of collection, but they keep comment counts and notifications current.
+- The cache is in memory and resets with the process.
+- Group comparison depends on formats returned by the Graph and Git APIs.
+- The change snapshot lives in the browser, so it is scoped per user/browser.

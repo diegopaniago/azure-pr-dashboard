@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryCache } from '../src/cache.js';
 
-test('MemoryCache retorna valores antes do TTL expirar', () => {
+test('MemoryCache returns values before TTL expires', () => {
   const cache = new MemoryCache(30);
 
   cache.set('prs', [{ id: 1 }]);
@@ -10,14 +10,14 @@ test('MemoryCache retorna valores antes do TTL expirar', () => {
   assert.deepEqual(cache.get('prs'), [{ id: 1 }]);
 });
 
-test('MemoryCache remove valores expirados', () => {
+test('MemoryCache removes expired values', () => {
   const originalNow = Date.now;
   let now = 1_000;
   Date.now = () => now;
 
   try {
     const cache = new MemoryCache(1);
-    cache.set('prs', 'valor');
+    cache.set('prs', 'value');
 
     now = 2_001;
 
@@ -28,7 +28,7 @@ test('MemoryCache remove valores expirados', () => {
   }
 });
 
-test('MemoryCache limpa uma chave especifica ou o cache completo', () => {
+test('MemoryCache clears a specific key or the full cache', () => {
   const cache = new MemoryCache(30);
 
   cache.set('a', 1);

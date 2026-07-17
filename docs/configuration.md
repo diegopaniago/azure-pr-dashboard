@@ -1,47 +1,47 @@
-# Configuração
+# Configuration
 
-O projeto é configurado por variáveis de ambiente. Em desenvolvimento local, use `.env`, criado a partir de `.env.example`. O arquivo `.env` não deve ser versionado.
+The project is configured through environment variables. In local development, use `.env`, created from `.env.example`. The `.env` file must not be versioned.
 
-## Variáveis
+## Variables
 
-| Variável | Obrigatória | Padrão | Descrição |
+| Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `AZURE_DEVOPS_ORG` | Sim | - | Nome da organização no Azure DevOps. |
-| `AZURE_DEVOPS_PROJECT` | Sim | - | Nome do projeto no Azure DevOps. |
-| `AZURE_DEVOPS_PAT` | Sim | - | Personal Access Token usado somente no backend. |
-| `AZURE_DEVOPS_USER_EMAIL` | Sim | - | E-mail do usuário monitorado. |
-| `DAYS_BACK` | Não | `60` | Janela de dias para buscar PRs. |
-| `PORT` | Não | `3000` | Porta local do dashboard. |
-| `AUTO_REFRESH_SECONDS` | Não | `300` | Frequência de atualização automática no navegador e tempo de vida do cache em memória. |
-| `AZURE_DEVOPS_REPOSITORIES` | Não | vazio | Lista opcional de repositórios separados por vírgula. |
+| `AZURE_DEVOPS_ORG` | Yes | - | Azure DevOps organization name. |
+| `AZURE_DEVOPS_PROJECT` | Yes | - | Azure DevOps project name. |
+| `AZURE_DEVOPS_PAT` | Yes | - | Personal Access Token used only by the backend. |
+| `AZURE_DEVOPS_USER_EMAIL` | Yes | - | Email of the monitored user. |
+| `DAYS_BACK` | No | `60` | Day window for PR search. |
+| `PORT` | No | `3999` | Local dashboard port. |
+| `AUTO_REFRESH_SECONDS` | No | `300` | Browser auto-refresh frequency and in-memory cache lifetime. |
+| `AZURE_DEVOPS_REPOSITORIES` | No | empty | Optional comma-separated repository list. |
 
 ## PAT
 
-O PAT deve ter permissão suficiente para:
+The PAT must have enough permission to:
 
-- ler repositórios e Pull Requests;
-- ler reviewers;
-- ler threads e comentários;
-- consultar identidade e grupos do usuário.
+- read repositories and Pull Requests;
+- read reviewers;
+- read threads and comments;
+- query the user's identity and groups.
 
-Se a organização bloquear leitura de Graph API, a identificação por grupo pode falhar mesmo que reviewer direto e comentários funcionem.
+If the organization blocks Graph API reads, group identification may fail even when direct reviewer and comment detection work.
 
 ## Docker Compose
 
-O `docker-compose.yml` lê `.env` quando ele existe:
+`docker-compose.yml` reads `.env` when it exists:
 
 ```bash
 docker compose up --build
 ```
 
-Sem `.env`, o serviço sobe, mas `/api/prs` falhará por falta de configuração.
+Without `.env`, the service starts, but `/api/prs` fails because configuration is missing.
 
-## Execução Local com Node.js
+## Local Node.js Execution
 
-Ao iniciar, o servidor carrega `.env` automaticamente quando o arquivo existe e dá prioridade aos valores do arquivo local:
+At startup, the server automatically loads `.env` when the file exists and gives local file values priority:
 
 ```bash
 npm run dev
 ```
 
-Sem `.env`, o servidor sobe, mas `/api/prs` falhará por falta de configuração.
+Without `.env`, the server starts, but `/api/prs` fails because configuration is missing.

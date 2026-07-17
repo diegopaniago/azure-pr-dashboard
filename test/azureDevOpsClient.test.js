@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AzureDevOpsClient } from '../src/azureDevOpsClient.js';
 
-test('AzureDevOpsClient monta URLs omitindo parametros vazios', () => {
+test('AzureDevOpsClient builds URLs while omitting empty params', () => {
   const client = new AzureDevOpsClient({
-    organization: 'minha org',
-    project: 'Meu Projeto',
+    organization: 'my org',
+    project: 'My Project',
     pat: 'pat'
   });
 
@@ -23,7 +23,7 @@ test('AzureDevOpsClient monta URLs omitindo parametros vazios', () => {
   assert.equal(parsed.searchParams.has('missing'), false);
 });
 
-test('AzureDevOpsClient valida variaveis obrigatorias', () => {
+test('AzureDevOpsClient validates required variables', () => {
   const client = new AzureDevOpsClient({
     organization: '',
     project: '',
@@ -36,7 +36,7 @@ test('AzureDevOpsClient valida variaveis obrigatorias', () => {
   );
 });
 
-test('AzureDevOpsClient pagina Pull Requests ate a ultima pagina', async () => {
+test('AzureDevOpsClient paginates Pull Requests until the last page', async () => {
   const client = new AzureDevOpsClient({
     organization: 'org',
     project: 'project',

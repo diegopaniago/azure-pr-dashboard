@@ -1,6 +1,119 @@
 const SNAPSHOT_KEY = 'azure-pr-dashboard:lastSnapshot';
 const NOTIFICATIONS_KEY = 'azure-pr-dashboard:notifications';
+const LANGUAGE_KEY = 'azure-pr-dashboard:language';
+const THEME_KEY = 'azure-pr-dashboard:theme';
 const DEFAULT_AUTO_REFRESH_SECONDS = 300;
+const DEFAULT_LANGUAGE = 'en';
+const DEFAULT_THEME = 'dark';
+const DEFAULT_STATUS_FILTER = 'active';
+const THEMES = new Set(['light', 'dark']);
+
+const translations = {
+  en: {
+    heroTitle: 'Pull Requests to review',
+    heroSubtitle: 'Track PRs where you were called directly, through a team, or joined through comments.',
+    languageLegend: 'Language',
+    themeLegend: 'Theme',
+    themeDark: 'Dark',
+    themeLight: 'Light',
+    notificationCenterLabel: 'Unseen notifications',
+    notificationsTitle: 'Notifications',
+    clearNotifications: 'Clear',
+    monitoringActive: 'Monitoring active',
+    loadingPullRequests: 'Loading Pull Requests...',
+    statusLabel: 'Status',
+    repositoryLabel: 'Repository',
+    involvementLabel: 'Involvement',
+    searchLabel: 'Search',
+    searchPlaceholder: 'Title, author, or branch',
+    authorColumn: 'Author',
+    createdColumn: 'Created',
+    closedColumn: 'Closed',
+    myInvolvementColumn: 'My involvement',
+    commentsColumn: 'Comments',
+    actionColumn: 'Action',
+    allOption: 'All',
+    directReviewer: 'Direct reviewer',
+    groupReviewer: 'Team reviewer',
+    commented: 'Commented',
+    authored: 'Author',
+    total: 'Total',
+    teamReviewerShort: 'By team',
+    emptyState: 'No Pull Requests found for the current filters.',
+    noNewNotifications: 'No new notifications.',
+    open: 'Open',
+    unknownError: 'Unknown error.',
+    refreshInterrupted: 'The refresh connection was interrupted.',
+    collectingPullRequests: 'Collecting Pull Requests...',
+    loadingFromCache: 'Loading Pull Requests from cache...',
+    lastUpdatedNever: 'Last updated: never',
+    lastUpdated: 'Last updated: {date}',
+    refreshesIn: 'Refreshes in {seconds} {unit}',
+    second: 'second',
+    seconds: 'seconds',
+    commentSummary: '{mine} mine / {total} total',
+    newPr: '#{id} - {title} appeared in your list.',
+    statusChanged: '#{id} - {title} changed to {status}.',
+    newComments: '#{id} - {title} received new comments.',
+    newActivity: '#{id} - {title} had new activity.',
+    involvementChanged: '#{id} - {title} had a change in your involvement.',
+    statusActive: 'Active',
+    statusCompleted: 'Completed',
+    statusAbandoned: 'Abandoned'
+  },
+  'pt-BR': {
+    heroTitle: 'Pull Requests para avaliar',
+    heroSubtitle: 'Acompanhe PRs em que você foi chamado diretamente, por time ou participou por comentários.',
+    languageLegend: 'Idioma',
+    themeLegend: 'Tema',
+    themeDark: 'Escuro',
+    themeLight: 'Claro',
+    notificationCenterLabel: 'Notificações não vistas',
+    notificationsTitle: 'Notificações',
+    clearNotifications: 'Limpar',
+    monitoringActive: 'Monitoramento ativo',
+    loadingPullRequests: 'Carregando Pull Requests...',
+    statusLabel: 'Status',
+    repositoryLabel: 'Repositório',
+    involvementLabel: 'Envolvimento',
+    searchLabel: 'Buscar',
+    searchPlaceholder: 'Título, autor ou branch',
+    authorColumn: 'Autor',
+    createdColumn: 'Criada',
+    closedColumn: 'Fechada',
+    myInvolvementColumn: 'Meu envolvimento',
+    commentsColumn: 'Comentários',
+    actionColumn: 'Ação',
+    allOption: 'Todos',
+    directReviewer: 'Reviewer direto',
+    groupReviewer: 'Reviewer por time',
+    commented: 'Comentei',
+    authored: 'Autor',
+    total: 'Total',
+    teamReviewerShort: 'Por time',
+    emptyState: 'Nenhuma Pull Request encontrada para os filtros atuais.',
+    noNewNotifications: 'Nenhuma notificação nova.',
+    open: 'Abrir',
+    unknownError: 'Erro desconhecido.',
+    refreshInterrupted: 'A conexão de atualização foi interrompida.',
+    collectingPullRequests: 'Coletando Pull Requests...',
+    loadingFromCache: 'Carregando Pull Requests do cache...',
+    lastUpdatedNever: 'Última atualização: nunca',
+    lastUpdated: 'Última atualização: {date}',
+    refreshesIn: 'Atualiza em {seconds} {unit}',
+    second: 'segundo',
+    seconds: 'segundos',
+    commentSummary: '{mine} meus / {total} total',
+    newPr: '#{id} - {title} apareceu na sua lista.',
+    statusChanged: '#{id} - {title} mudou para {status}.',
+    newComments: '#{id} - {title} recebeu novos comentários.',
+    newActivity: '#{id} - {title} teve nova atividade.',
+    involvementChanged: '#{id} - {title} teve mudança no seu envolvimento.',
+    statusActive: 'Ativa',
+    statusCompleted: 'Concluída',
+    statusAbandoned: 'Abandonada'
+  }
+};
 
 const state = {
   prs: [],
@@ -10,7 +123,10 @@ const state = {
   currentStream: null,
   autoRefreshTimer: null,
   autoRefreshSeconds: DEFAULT_AUTO_REFRESH_SECONDS,
-  refreshSecondsRemaining: DEFAULT_AUTO_REFRESH_SECONDS
+  refreshSecondsRemaining: DEFAULT_AUTO_REFRESH_SECONDS,
+  lastGeneratedAt: null,
+  language: readStoredLanguage(),
+  theme: readStoredTheme()
 };
 
 const elements = {
@@ -29,12 +145,55 @@ const elements = {
   notificationCount: document.querySelector('#notificationCount'),
   notificationPanel: document.querySelector('#notificationPanel'),
   notificationList: document.querySelector('#notificationList'),
-  clearNotificationsButton: document.querySelector('#clearNotificationsButton')
+  clearNotificationsButton: document.querySelector('#clearNotificationsButton'),
+  languageInputs: document.querySelectorAll('input[name="language"]'),
+  themeInputs: document.querySelectorAll('input[name="theme"]')
 };
+
+function readStoredLanguage() {
+  try {
+    const storedLanguage = localStorage.getItem(LANGUAGE_KEY);
+    return translations[storedLanguage] ? storedLanguage : DEFAULT_LANGUAGE;
+  } catch {
+    return DEFAULT_LANGUAGE;
+  }
+}
+
+function saveStoredLanguage(language) {
+  try {
+    localStorage.setItem(LANGUAGE_KEY, language);
+  } catch {
+    // The UI can still switch languages if browser storage is unavailable.
+  }
+}
+
+function readStoredTheme() {
+  try {
+    const storedTheme = localStorage.getItem(THEME_KEY);
+    return THEMES.has(storedTheme) ? storedTheme : DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
+
+function saveStoredTheme(theme) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // The UI can still switch themes if browser storage is unavailable.
+  }
+}
+
+function t(key, params = {}) {
+  const template = translations[state.language][key] ?? translations[DEFAULT_LANGUAGE][key] ?? key;
+  return Object.entries(params).reduce((text, [name, value]) => {
+    return text.replaceAll(`{${name}}`, String(value));
+  }, template);
+}
 
 function formatDate(value) {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('pt-BR', {
+  return new Intl.DateTimeFormat(state.language, {
     day: '2-digit',
     month: '2-digit',
     year: '2-digit',
@@ -57,18 +216,88 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function localizedStatus(status) {
+  const statusKey = `status${String(status || '').charAt(0).toUpperCase()}${String(status || '').slice(1)}`;
+  return translations[state.language][statusKey] || translations[DEFAULT_LANGUAGE][statusKey] || status;
+}
+
+function applyStaticTranslations() {
+  document.documentElement.lang = state.language;
+
+  for (const element of document.querySelectorAll('[data-i18n]')) {
+    element.textContent = t(element.dataset.i18n);
+  }
+
+  for (const element of document.querySelectorAll('[data-i18n-attr]')) {
+    const mappings = element.dataset.i18nAttr.split(',');
+    for (const mapping of mappings) {
+      const [attribute, key] = mapping.split(':');
+      element.setAttribute(attribute, t(key));
+    }
+  }
+
+  for (const input of elements.languageInputs) {
+    input.checked = input.value === state.language;
+  }
+
+  for (const input of elements.themeInputs) {
+    input.checked = input.value === state.theme;
+  }
+
+  if (elements.statusFilter.value !== DEFAULT_STATUS_FILTER && !elements.statusFilter.dataset.userChanged) {
+    elements.statusFilter.value = DEFAULT_STATUS_FILTER;
+  }
+}
+
+function applyTheme() {
+  document.body.dataset.theme = state.theme;
+
+  for (const input of elements.themeInputs) {
+    input.checked = input.value === state.theme;
+  }
+}
+
+function renderLastUpdated() {
+  elements.lastUpdated.textContent = state.lastGeneratedAt
+    ? t('lastUpdated', { date: formatDate(state.lastGeneratedAt) })
+    : t('lastUpdatedNever');
+}
+
+function setLanguage(language) {
+  if (!translations[language]) return;
+
+  state.language = language;
+  saveStoredLanguage(language);
+  applyStaticTranslations();
+  renderRefreshCountdown();
+  renderLastUpdated();
+  renderNotificationCenter();
+  renderAll();
+}
+
+function setTheme(theme) {
+  if (!THEMES.has(theme)) return;
+
+  state.theme = theme;
+  saveStoredTheme(theme);
+  applyTheme();
+}
+
 function involvementLabels(involvement) {
   const labels = [];
-  if (involvement.directReviewer) labels.push(['directReviewer', 'Reviewer direto']);
-  if (involvement.groupReviewer) labels.push(['groupReviewer', 'Reviewer por time']);
-  if (involvement.commented) labels.push(['commented', 'Comentei']);
-  if (involvement.authored) labels.push(['authored', 'Autor']);
+  if (involvement.directReviewer) labels.push(['directReviewer', t('directReviewer')]);
+  if (involvement.groupReviewer) labels.push(['groupReviewer', t('groupReviewer')]);
+  if (involvement.commented) labels.push(['commented', t('commented')]);
+  if (involvement.authored) labels.push(['authored', t('authored')]);
   return labels;
 }
 
 function formatCommentSummary(pr) {
   if (!pr.commentsLoaded) return '-';
-  return `${escapeHtml(pr.commentCountByUser)} meus / ${escapeHtml(pr.commentCount)} total`;
+  return t('commentSummary', {
+    mine: escapeHtml(pr.commentCountByUser),
+    total: escapeHtml(pr.commentCount)
+  });
 }
 
 function makeSnapshot(prs) {
@@ -95,11 +324,37 @@ function readSnapshot() {
 }
 
 function describeChange(pr, previous) {
-  if (!previous) return `#${pr.pullRequestId} - ${pr.title} apareceu na sua lista.`;
-  if (previous.status !== pr.status) return `#${pr.pullRequestId} - ${pr.title} mudou para ${pr.status}.`;
-  if ((previous.commentCount || 0) < (pr.commentCount || 0)) return `#${pr.pullRequestId} - ${pr.title} recebeu novos comentários.`;
-  if (previous.lastActivityDate !== pr.lastActivityDate) return `#${pr.pullRequestId} - ${pr.title} teve nova atividade.`;
-  return `#${pr.pullRequestId} - ${pr.title} teve mudança no seu envolvimento.`;
+  const params = {
+    id: pr.pullRequestId,
+    title: pr.title,
+    status: localizedStatus(pr.status)
+  };
+
+  if (!previous) return t('newPr', params);
+  if (previous.status !== pr.status) return t('statusChanged', params);
+  if ((previous.commentCount || 0) < (pr.commentCount || 0)) return t('newComments', params);
+  if (previous.lastActivityDate !== pr.lastActivityDate) return t('newActivity', params);
+  return t('involvementChanged', params);
+}
+
+function formatNotificationMessage(notification) {
+  if (!notification.changeType) {
+    return notification.message || '';
+  }
+
+  const keyByType = {
+    new: 'newPr',
+    status: 'statusChanged',
+    comments: 'newComments',
+    activity: 'newActivity',
+    involvement: 'involvementChanged'
+  };
+
+  return t(keyByType[notification.changeType] || 'involvementChanged', {
+    id: notification.pullRequestId,
+    title: notification.title,
+    status: localizedStatus(notification.status)
+  });
 }
 
 function sameInvolvement(a = {}, b = {}) {
@@ -166,6 +421,10 @@ function addUnseenNotifications(changes) {
   const newNotifications = changes.map((change, index) => ({
     id: `${change.pr.id}:${Date.now()}:${index}`,
     message: change.message,
+    changeType: change.type,
+    pullRequestId: change.pr.pullRequestId,
+    title: change.pr.title,
+    status: change.pr.status,
     url: change.pr.url,
     detectedAt
   }));
@@ -192,13 +451,13 @@ function renderNotificationCenter() {
   elements.notificationCount.classList.toggle('hidden', count === 0);
 
   if (count === 0) {
-    elements.notificationList.innerHTML = '<div class="notification-empty">Nenhuma notificação nova.</div>';
+    elements.notificationList.innerHTML = `<div class="notification-empty">${t('noNewNotifications')}</div>`;
     return;
   }
 
   elements.notificationList.innerHTML = state.unseenNotifications.map((notification) => `
     <a class="notification-item" href="${escapeHtml(notification.url)}" target="_blank" rel="noopener">
-      <strong>${escapeHtml(notification.message)}</strong>
+      <strong>${escapeHtml(formatNotificationMessage(notification))}</strong>
       <span>${formatDate(notification.detectedAt)}</span>
     </a>
   `).join('');
@@ -239,12 +498,12 @@ function getFilteredPrs() {
 function renderSummary() {
   const prs = state.prs;
   const cards = [
-    ['Total', prs.length],
-    ['Reviewer direto', prs.filter((pr) => pr.involvement.directReviewer).length],
-    ['Por time', prs.filter((pr) => pr.involvement.groupReviewer).length],
-    ['Comentei', prs.filter((pr) => pr.involvement.commented).length],
-    ['Active', prs.filter((pr) => pr.status === 'active').length],
-    ['Completed', prs.filter((pr) => pr.status === 'completed').length]
+    [t('total'), prs.length],
+    [t('directReviewer'), prs.filter((pr) => pr.involvement.directReviewer).length],
+    [t('teamReviewerShort'), prs.filter((pr) => pr.involvement.groupReviewer).length],
+    [t('commented'), prs.filter((pr) => pr.involvement.commented).length],
+    [t('statusActive'), prs.filter((pr) => pr.status === 'active').length],
+    [t('statusCompleted'), prs.filter((pr) => pr.status === 'completed').length]
   ];
 
   elements.summaryGrid.innerHTML = cards.map(([label, value]) => `
@@ -258,7 +517,7 @@ function renderSummary() {
 function renderRepositoryOptions() {
   const current = elements.repositoryFilter.value;
   const repositories = [...new Set(state.prs.map((pr) => pr.repository))].sort();
-  elements.repositoryFilter.innerHTML = '<option value="all">Todos</option>'
+  elements.repositoryFilter.innerHTML = `<option value="all">${t('allOption')}</option>`
     + repositories.map((repo) => `<option value="${escapeHtml(repo)}">${escapeHtml(repo)}</option>`).join('');
   elements.repositoryFilter.value = repositories.includes(current) ? current : 'all';
 }
@@ -280,14 +539,14 @@ function renderTable() {
             <span class="branch">${escapeHtml(pr.sourceBranch)} -> ${escapeHtml(pr.targetBranch)}</span>
           </div>
         </td>
-        <td><span class="status ${escapeHtml(pr.status)}">${escapeHtml(pr.status)}</span></td>
+        <td><span class="status ${escapeHtml(pr.status)}">${escapeHtml(localizedStatus(pr.status))}</span></td>
         <td>${escapeHtml(pr.repository)}</td>
         <td>${escapeHtml(pr.createdBy)}</td>
         <td>${formatDate(pr.creationDate)}</td>
         <td>${formatDate(pr.closedDate)}</td>
         <td><div class="badges">${badges || '-'}</div></td>
         <td>${formatCommentSummary(pr)}</td>
-        <td><a class="link" href="${escapeHtml(pr.url)}" target="_blank" rel="noopener">Abrir</a></td>
+        <td><a class="link" href="${escapeHtml(pr.url)}" target="_blank" rel="noopener">${t('open')}</a></td>
       </tr>
     `;
   }).join('');
@@ -315,7 +574,10 @@ function clearError() {
 
 function renderRefreshCountdown() {
   const seconds = Math.max(0, state.refreshSecondsRemaining);
-  elements.refreshFrequency.textContent = `Atualiza em ${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}`;
+  elements.refreshFrequency.textContent = t('refreshesIn', {
+    seconds,
+    unit: seconds === 1 ? t('second') : t('seconds')
+  });
 }
 
 function resetRefreshCountdown() {
@@ -348,7 +610,7 @@ async function loadPullRequestsWithFetch({ refresh = false } = {}) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.details || data.error || 'Erro desconhecido.');
+      throw new Error(data.details || data.error || t('unknownError'));
     }
 
     const changes = detectChanges(data.prs || []);
@@ -358,7 +620,8 @@ async function loadPullRequestsWithFetch({ refresh = false } = {}) {
     addUnseenNotifications(changes);
     renderAll();
 
-    elements.lastUpdated.textContent = `Última atualização: ${formatDate(data.generatedAt)}`;
+    state.lastGeneratedAt = data.generatedAt;
+    renderLastUpdated();
     state.firstLoad = false;
   } catch (error) {
     showError(error.message);
@@ -389,13 +652,14 @@ function loadPullRequests({ refresh = false } = {}) {
   setLoading(true);
   clearError();
   renderAll();
-  elements.lastUpdated.textContent = 'Coletando Pull Requests...';
+  state.lastGeneratedAt = null;
+  elements.lastUpdated.textContent = t('collectingPullRequests');
 
   stream.addEventListener('start', (event) => {
     const data = JSON.parse(event.data);
     elements.lastUpdated.textContent = data.cached
-      ? 'Carregando Pull Requests do cache...'
-      : 'Coletando Pull Requests...';
+      ? t('loadingFromCache')
+      : t('collectingPullRequests');
   });
 
   stream.addEventListener('pr', (event) => {
@@ -415,7 +679,8 @@ function loadPullRequests({ refresh = false } = {}) {
     addUnseenNotifications(changes);
     renderAll();
 
-    elements.lastUpdated.textContent = `Última atualização: ${formatDate(data.generatedAt)}`;
+    state.lastGeneratedAt = data.generatedAt;
+    renderLastUpdated();
     state.firstLoad = false;
     setLoading(false);
   });
@@ -425,7 +690,7 @@ function loadPullRequests({ refresh = false } = {}) {
     finished = true;
     stream.close();
     state.currentStream = null;
-    showError(data.details || data.error || 'Erro desconhecido.');
+    showError(data.details || data.error || t('unknownError'));
     setLoading(false);
   });
 
@@ -434,7 +699,7 @@ function loadPullRequests({ refresh = false } = {}) {
     finished = true;
     stream.close();
     state.currentStream = null;
-    showError('A conexão de atualização foi interrompida.');
+    showError(t('refreshInterrupted'));
     setLoading(false);
   };
 }
@@ -445,7 +710,7 @@ async function loadConfig() {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.details || data.error || 'Erro desconhecido.');
+      throw new Error(data.details || data.error || t('unknownError'));
     }
 
     return {
@@ -459,11 +724,18 @@ async function loadConfig() {
 }
 
 async function startApp() {
+  applyTheme();
+  applyStaticTranslations();
+  saveStoredLanguage(state.language);
+  saveStoredTheme(state.theme);
+  elements.statusFilter.value = DEFAULT_STATUS_FILTER;
+
   const config = await loadConfig();
 
   state.autoRefreshSeconds = config.autoRefreshSeconds;
   state.refreshSecondsRemaining = config.autoRefreshSeconds;
   state.unseenNotifications = readStoredNotifications();
+  renderLastUpdated();
   renderNotificationCenter();
   renderRefreshCountdown();
   loadPullRequests();
@@ -484,6 +756,12 @@ async function startApp() {
 
 elements.notificationBell.addEventListener('click', toggleNotificationPanel);
 elements.clearNotificationsButton.addEventListener('click', clearUnseenNotifications);
+for (const input of elements.languageInputs) {
+  input.addEventListener('change', () => setLanguage(input.value));
+}
+for (const input of elements.themeInputs) {
+  input.addEventListener('change', () => setTheme(input.value));
+}
 
 for (const element of [
   elements.statusFilter,
@@ -491,7 +769,10 @@ for (const element of [
   elements.involvementFilter,
   elements.searchInput
 ]) {
-  element.addEventListener('input', renderTable);
+  element.addEventListener('input', () => {
+    element.dataset.userChanged = 'true';
+    renderTable();
+  });
 }
 
 startApp();

@@ -1,97 +1,123 @@
 # Azure PR Dashboard
 
-Dashboard local em JavaScript puro, HTML e CSS para acompanhar Pull Requests do Azure DevOps em que você foi envolvido nos últimos 60 dias. A aplicação roda em Docker, mantém o PAT somente no backend e ajuda um desenvolvedor a identificar rapidamente PRs que precisam de atenção por reviewer direto, reviewer por grupo/time ou comentários feitos nas threads.
+Local plain JavaScript, HTML, and CSS dashboard for tracking Azure DevOps Pull Requests where you were involved in the last 60 days. The app runs with Docker, keeps the PAT only in the backend, and helps a developer quickly spot PRs that need attention because of direct review assignment, group/team review assignment, authorship, or comments in threads.
 
-## Recursos
+## Features
 
-- Lista PRs `active`, `completed` e `abandoned`.
-- Considera PRs criadas ou fechadas dentro da janela configurada.
-- Identifica envolvimento por reviewer direto, grupo/time, comentários e autoria.
-- Filtra por status, repositório, tipo de envolvimento e texto livre.
-- Renderiza PRs progressivamente conforme o backend recebe resultados.
-- Atualiza automaticamente conforme `AUTO_REFRESH_SECONDS`.
-- Usa sino interno para guardar mudanças detectadas ainda não limpas.
-- Mantém snapshot local em `localStorage` com a chave `azure-pr-dashboard:lastSnapshot`.
-- Usa Node.js 24 no Docker.
+- Lists `active`, `completed`, and `abandoned` PRs.
+- Considers PRs created or closed within the configured window.
+- Detects involvement by direct reviewer, group/team reviewer, comments, and authorship.
+- Filters by status, repository, involvement type, and free text.
+- Renders PRs progressively as the backend receives results.
+- Switches the frontend between English and Brazilian Portuguese.
+- Persists light/dark theme selection, with dark as the default.
+- Refreshes automatically according to `AUTO_REFRESH_SECONDS`.
+- Uses an internal bell to keep detected changes that have not been cleared.
+- Keeps a local snapshot in `localStorage` with the key `azure-pr-dashboard:lastSnapshot`.
+- Uses Node.js 24 in Docker.
 
-## Configuração
+## Quick Start
 
-Copie o arquivo de exemplo:
+Clone the repository and enter the project folder:
+
+```bash
+git clone <repository-url>
+cd azure-pr-dashboard
+```
+
+Copy the example file:
 
 ```bash
 cp .env.example .env
 ```
 
-Preencha:
+Fill in:
 
 ```env
-AZURE_DEVOPS_ORG=nome-da-organizacao
-AZURE_DEVOPS_PROJECT=nome-do-projeto
-AZURE_DEVOPS_PAT=seu_pat
-AZURE_DEVOPS_USER_EMAIL=seu.email@empresa.com
+AZURE_DEVOPS_ORG=organization-name
+AZURE_DEVOPS_PROJECT=project-name
+AZURE_DEVOPS_PAT=your_pat
+AZURE_DEVOPS_USER_EMAIL=your.email@company.com
 DAYS_BACK=60
-PORT=3000
+PORT=3999
 AUTO_REFRESH_SECONDS=300
 ```
 
-Opcionalmente limite os repositórios consultados:
+Create an Azure DevOps Personal Access Token before starting the app. The token needs these grants:
+
+- Code: Read, to query repositories, Pull Requests, reviewers, and threads.
+- Graph or equivalent identity permissions, to resolve the monitored user and their groups/teams.
+
+Optionally limit the queried repositories:
 
 ```env
 AZURE_DEVOPS_REPOSITORIES=repo1,repo2,repo3
 ```
 
-## PAT do Azure DevOps
-
-Crie um Personal Access Token em Azure DevOps acessando `User settings > Personal access tokens > New Token`. Trate esse token como senha: não publique, não coloque no frontend e não faça commit do `.env`.
-
-Permissões mínimas esperadas:
-
-- Code: Read, para consultar repositórios, Pull Requests, reviewers e threads.
-- Graph ou permissões equivalentes de identidade, para resolver o usuário e os grupos/time dos quais ele faz parte.
-
-Dependendo das políticas da organização, pode ser necessário ajustar escopos para leitura de identidade ou projeto.
-
-## Execução
-
-Com Docker Compose, rode:
+Start the dashboard in the background:
 
 ```bash
-docker compose up --build
+docker compose up -d
 ```
 
-Para desenvolvimento local com Node.js, rode:
+Open the service at:
+
+```txt
+http://localhost:3999
+```
+
+## Azure DevOps PAT
+
+Create a Personal Access Token in Azure DevOps through `User settings > Personal access tokens > New Token`. Treat this token like a password: do not publish it, do not put it in the frontend, and do not commit `.env`.
+
+Expected minimum permissions:
+
+- Code: Read, to query repositories, Pull Requests, reviewers, and threads.
+- Graph or equivalent identity permissions, to resolve the user and the groups/teams they belong to.
+
+Depending on organization policies, you may need to adjust scopes for identity or project reads.
+
+## Running
+
+With Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+For local Node.js development:
 
 ```bash
 npm run dev
 ```
 
-Ao iniciar, o servidor carrega o arquivo `.env` quando ele existir e dá prioridade aos valores do arquivo local.
+At startup, the server loads `.env` when it exists and gives local file values priority.
 
-Abra:
+Open:
 
 ```txt
-http://localhost:3000
+http://localhost:3999
 ```
 
-## Testes
+## Tests
 
-Os testes unitários usam apenas o runner nativo do Node.js, sem bibliotecas adicionais:
+Unit tests use only the native Node.js runner, with no extra libraries:
 
 ```bash
 npm test
 ```
 
-## Documentação Técnica
+## Technical Documentation
 
-- `AGENTS.md`: instruções para agentes de IA e manutenção assistida.
-- `docs/architecture.md`: visão de arquitetura e fluxo de coleta.
-- `docs/azure-devops-domain.md`: regras de domínio do Azure DevOps.
-- `docs/api-contract.md`: contrato dos endpoints locais.
-- `docs/configuration.md`: variáveis de ambiente e configuração.
-- `docs/testing.md`: estratégia de testes.
-- `docs/frontend.md`: comportamento do frontend.
-- `docs/backlog.md`: backlog técnico sugerido.
-- `docs/ai-handoff.md`: resumo para retomada por IA.
+- `AGENTS.md`: AI agent and assisted maintenance instructions.
+- `docs/architecture.md`: architecture and collection flow.
+- `docs/azure-devops-domain.md`: Azure DevOps domain rules.
+- `docs/api-contract.md`: local endpoint contract.
+- `docs/configuration.md`: environment variables and configuration.
+- `docs/testing.md`: test strategy.
+- `docs/frontend.md`: frontend behavior.
+- `docs/backlog.md`: suggested technical backlog.
+- `docs/ai-handoff.md`: summary for future AI handoff.
 
 ## Endpoints
 
@@ -103,12 +129,12 @@ GET /api/prs/stream
 GET /api/prs/stream?refresh=true
 ```
 
-`refresh=true` ignora o cache em memória. `AUTO_REFRESH_SECONDS` define tanto a frequência de atualização automática do navegador quanto o tempo de vida do cache em memória; o padrão é `300` segundos.
+`refresh=true` bypasses the in-memory cache. `AUTO_REFRESH_SECONDS` defines both the browser auto-refresh frequency and the in-memory cache lifetime; the default is `300` seconds.
 
-## Limitações conhecidas
+## Known Limitations
 
-A detecção de comentários consulta threads das PRs candidatas a cada coleta para manter contagens e notificações atualizadas. Em projetos com muitos repositórios e muitas PRs recentes, isso pode deixar a primeira carga mais lenta e aumentar o consumo da API do Azure DevOps. Para reduzir custo, use `AZURE_DEVOPS_REPOSITORIES` quando possível.
+Comment detection reads threads for candidate PRs on every collection to keep counts and notifications current. In projects with many repositories and many recent PRs, this can slow the first load and increase Azure DevOps API usage. Use `AZURE_DEVOPS_REPOSITORIES` when possible to reduce cost.
 
-A identificação de reviewer por grupo depende dos identificadores retornados pelas APIs Graph e Git do Azure DevOps. Em algumas organizações, times e grupos podem aparecer com formatos diferentes; nesses casos pode ser necessário ajustar a comparação de identidades.
+Group reviewer detection depends on identifiers returned by the Azure DevOps Graph and Git APIs. In some organizations, teams and groups can appear in different formats; those cases may require adjusting identity comparison.
 
-As notificações do navegador dependem de permissão local e não são disparadas na primeira carga para evitar alertas antigos em massa.
+Browser notifications are intentionally not native popups. The dashboard keeps notification history only in the internal bell and does not alert on first load to avoid a batch of old changes.

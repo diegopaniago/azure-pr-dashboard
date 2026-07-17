@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,26 +7,48 @@
     <link rel="icon" href="/azure-devops-glasses.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
   </head>
-  <body>
+  <body data-theme="dark">
     <header class="topbar">
       <div class="brand-block">
         <img class="brand-icon" src="/azure-devops-glasses.svg" alt="" aria-hidden="true">
         <div>
           <p class="eyebrow">Azure DevOps</p>
-          <h1>Pull Requests para avaliar</h1>
-          <p class="subtitle">Acompanhe PRs em que você foi chamado diretamente, por time ou participou por comentários.</p>
+          <h1 data-i18n="heroTitle">Pull Requests to review</h1>
+          <p class="subtitle" data-i18n="heroSubtitle">Track PRs where you were called directly, through a team, or joined through comments.</p>
         </div>
       </div>
       <div class="actions">
-        <aside class="notification-center" aria-label="Notificações não vistas">
-          <button id="notificationBell" class="notification-bell" type="button" aria-expanded="false" aria-controls="notificationPanel" title="Notificações">
+        <fieldset class="language-switch" aria-label="Language">
+          <legend data-i18n="languageLegend">Language</legend>
+          <label>
+            <input type="radio" name="language" value="en" checked>
+            <span>English</span>
+          </label>
+          <label>
+            <input type="radio" name="language" value="pt-BR">
+            <span>Português</span>
+          </label>
+        </fieldset>
+        <fieldset class="theme-switch" data-i18n-attr="aria-label:themeLegend" aria-label="Theme">
+          <legend data-i18n="themeLegend">Theme</legend>
+          <label>
+            <input type="radio" name="theme" value="dark" checked>
+            <span data-i18n="themeDark">Dark</span>
+          </label>
+          <label>
+            <input type="radio" name="theme" value="light">
+            <span data-i18n="themeLight">Light</span>
+          </label>
+        </fieldset>
+        <aside class="notification-center" data-i18n-attr="aria-label:notificationCenterLabel" aria-label="Unseen notifications">
+          <button id="notificationBell" class="notification-bell" type="button" aria-expanded="false" aria-controls="notificationPanel" data-i18n-attr="title:notificationsTitle" title="Notifications">
             <span aria-hidden="true">🔔</span>
             <span id="notificationCount" class="notification-count hidden">0</span>
           </button>
           <section id="notificationPanel" class="notification-panel hidden">
             <header class="notification-panel-header">
-              <strong>Notificações</strong>
-              <button id="clearNotificationsButton" class="link-button" type="button">Limpar</button>
+              <strong data-i18n="notificationsTitle">Notifications</strong>
+              <button id="clearNotificationsButton" class="link-button" type="button" data-i18n="clearNotifications">Clear</button>
             </header>
             <div id="notificationList" class="notification-list"></div>
           </section>
@@ -38,46 +60,46 @@
       <section class="monitor" aria-live="polite">
         <div>
           <span class="status-dot"></span>
-          <strong>Monitoramento ativo</strong>
+          <strong data-i18n="monitoringActive">Monitoring active</strong>
         </div>
-        <span id="refreshFrequency">Atualiza em ...</span>
-        <span id="lastUpdated">Última atualização: nunca</span>
+        <span id="refreshFrequency">Refreshes in ...</span>
+        <span id="lastUpdated">Last updated: never</span>
       </section>
 
       <section id="errorBox" class="error hidden"></section>
-      <section id="loadingBox" class="loading">Carregando Pull Requests...</section>
+      <section id="loadingBox" class="loading" data-i18n="loadingPullRequests">Loading Pull Requests...</section>
 
       <section class="summary-grid" id="summaryGrid"></section>
 
       <section class="filters">
         <label>
-          Status
+          <span data-i18n="statusLabel">Status</span>
           <select id="statusFilter">
-            <option value="all">Todos</option>
-            <option value="active" selected>Active</option>
-            <option value="completed">Completed</option>
-            <option value="abandoned">Abandoned</option>
+            <option value="all" data-i18n="allOption">All</option>
+            <option value="active" data-i18n="statusActive" selected>Active</option>
+            <option value="completed" data-i18n="statusCompleted">Completed</option>
+            <option value="abandoned" data-i18n="statusAbandoned">Abandoned</option>
           </select>
         </label>
         <label>
-          Repositório
+          <span data-i18n="repositoryLabel">Repository</span>
           <select id="repositoryFilter">
-            <option value="all">Todos</option>
+            <option value="all" data-i18n="allOption">All</option>
           </select>
         </label>
         <label>
-          Envolvimento
+          <span data-i18n="involvementLabel">Involvement</span>
           <select id="involvementFilter">
-            <option value="all">Todos</option>
-            <option value="directReviewer">Reviewer direto</option>
-            <option value="groupReviewer">Reviewer por time</option>
-            <option value="commented">Comentei</option>
-            <option value="authored">Autor</option>
+            <option value="all" data-i18n="allOption">All</option>
+            <option value="directReviewer" data-i18n="directReviewer">Direct reviewer</option>
+            <option value="groupReviewer" data-i18n="groupReviewer">Team reviewer</option>
+            <option value="commented" data-i18n="commented">Commented</option>
+            <option value="authored" data-i18n="authored">Author</option>
           </select>
         </label>
         <label class="search-field">
-          Buscar
-          <input id="searchInput" type="search" placeholder="Título, autor ou branch">
+          <span data-i18n="searchLabel">Search</span>
+          <input id="searchInput" type="search" data-i18n-attr="placeholder:searchPlaceholder" placeholder="Title, author, or branch">
         </label>
       </section>
 
@@ -88,17 +110,17 @@
               <th>PR</th>
               <th>Status</th>
               <th>Repo</th>
-              <th>Autor</th>
-              <th>Criada</th>
-              <th>Fechada</th>
-              <th>Meu envolvimento</th>
-              <th>Comentários</th>
-              <th>Ação</th>
+              <th data-i18n="authorColumn">Author</th>
+              <th data-i18n="createdColumn">Created</th>
+              <th data-i18n="closedColumn">Closed</th>
+              <th data-i18n="myInvolvementColumn">My involvement</th>
+              <th data-i18n="commentsColumn">Comments</th>
+              <th data-i18n="actionColumn">Action</th>
             </tr>
           </thead>
           <tbody id="prsTable"></tbody>
         </table>
-        <div id="emptyState" class="empty hidden">Nenhuma Pull Request encontrada para os filtros atuais.</div>
+        <div id="emptyState" class="empty hidden" data-i18n="emptyState">No Pull Requests found for the current filters.</div>
       </section>
     </main>
 

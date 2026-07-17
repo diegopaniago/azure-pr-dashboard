@@ -1,34 +1,33 @@
-# Testes
+# Testing
 
-Os testes usam o runner nativo do Node.js 24, sem bibliotecas externas. O objetivo é cobrir regras de negócio e integrações internas sem depender do Azure DevOps real.
+Tests use the native Node.js 24 runner, with no external libraries. The goal is to cover business rules and internal integrations without depending on real Azure DevOps.
 
-## Comando
+## Command
 
 ```bash
 npm test
 ```
 
-## Organização
+## Organization
 
-- `test/cache.test.js`: comportamento do cache em memória.
-- `test/azureDevOpsClient.test.js`: montagem de URL, validação de configuração e paginação.
-- `test/prAggregator.test.js`: filtros de repositório, deduplicação e critérios de envolvimento.
+- `test/cache.test.js`: in-memory cache behavior.
+- `test/azureDevOpsClient.test.js`: URL construction, configuration validation, and pagination.
+- `test/prAggregator.test.js`: repository filters, deduplication, and involvement criteria.
 
-## Diretrizes
+## Guidelines
 
-- Use fakes em memória para simular o client do Azure DevOps.
-- Não faça chamadas de rede em testes unitários.
-- Não use PAT real em testes.
-- Prefira asserts explícitos com `node:assert/strict`.
-- Ao corrigir bug de classificação, adicione um teste que falhe antes da correção.
+- Use in-memory fakes to simulate the Azure DevOps client.
+- Do not make network calls in unit tests.
+- Do not use a real PAT in tests.
+- Prefer explicit assertions with `node:assert/strict`.
+- When fixing a classification bug, add a test that fails before the fix.
 
-## Casos Importantes para Cobrir em Evoluções
+## Important Cases To Cover In Evolutions
 
-- Reviewer direto identificado por `id`.
-- Reviewer direto identificado por `uniqueName`.
-- Grupo identificado por `id`.
-- Grupo identificado por `displayName` ou `descriptor`.
-- Comentários deletados ignorados.
-- PR fechada dentro da janela, mas criada antes dela.
-- Repositórios filtrados por nome e por id.
-
+- Direct reviewer identified by `id`.
+- Direct reviewer identified by `uniqueName`.
+- Group identified by `id`.
+- Group identified by `displayName` or `descriptor`.
+- Deleted comments ignored.
+- PR closed within the window but created before it.
+- Repositories filtered by name and id.

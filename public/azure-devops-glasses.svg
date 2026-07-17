@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
-  <title id="title">Azure DevOps com óculos</title>
-  <desc id="desc">Ícone inspirado no Azure DevOps com óculos de desenvolvedor.</desc>
+  <title id="title">Azure DevOps with glasses</title>
+  <desc id="desc">Icon inspired by Azure DevOps with developer glasses.</desc>
   <defs>
     <linearGradient id="azure" x1="18" x2="104" y1="18" y2="110" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#54a8ff"/>

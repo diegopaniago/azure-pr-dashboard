@@ -2,10 +2,10 @@ services:
   azure-pr-dashboard:
     build: .
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-3999}:3999"
     env_file:
       - path: .env
         required: false
     environment:
-      PORT: 3000
+      PORT: 3999
     restart: unless-stopped

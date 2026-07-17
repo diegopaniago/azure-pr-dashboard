@@ -1,57 +1,57 @@
-# Domínio Azure DevOps
+# Azure DevOps Domain
 
-Esta documentação resume as regras de domínio usadas pelo projeto para decidir se uma Pull Request deve aparecer no dashboard. Use este arquivo como referência antes de alterar coleta, filtros ou classificação de envolvimento.
+This document summarizes the domain rules used by the project to decide whether a Pull Request should appear in the dashboard. Use it as a reference before changing collection, filters, or involvement classification.
 
-## Critérios de Envolvimento
+## Involvement Criteria
 
-Uma PR é considerada relevante quando pelo menos um critério é verdadeiro:
+A PR is relevant when at least one criterion is true:
 
-- `directReviewer`: o usuário aparece diretamente em `reviewers`.
-- `groupReviewer`: algum grupo/time do usuário aparece em `reviewers`.
-- `commented`: o usuário fez comentário em alguma thread da PR.
-- `authored`: o usuário criou a PR.
+- `directReviewer`: the user appears directly in `reviewers`.
+- `groupReviewer`: one of the user's groups/teams appears in `reviewers`.
+- `commented`: the user commented in a PR thread.
+- `authored`: the user created the PR.
 
-`authored` não estava no requisito inicial como critério principal, mas é mantido porque é útil para o dashboard e já aparece como badge na UI.
+`authored` was not part of the initial main requirement, but it remains because it is useful for the dashboard and already appears as a UI badge.
 
-## Janela de Tempo
+## Time Window
 
-O dashboard considera os últimos `DAYS_BACK` dias, com padrão de 60 dias.
+The dashboard considers the last `DAYS_BACK` days, with a default of 60 days.
 
-Para reduzir risco de perder PRs relevantes:
+To reduce the risk of missing relevant PRs:
 
-- busca PRs criadas dentro da janela;
-- busca PRs fechadas dentro da janela para status `completed` e `abandoned`;
-- não busca `closed` para `active`, pois PR ativa não deve ter fechamento.
+- it searches PRs created within the window;
+- it searches PRs closed within the window for `completed` and `abandoned` statuses;
+- it does not search the `closed` window for `active`, because active PRs should not have a close date.
 
-## Status Considerados
+## Considered Statuses
 
 - `active`
 - `completed`
 - `abandoned`
 
-Novos status devem ser adicionados com cuidado e teste unitário.
+New statuses must be added carefully and with unit tests.
 
-## Deduplicação
+## Deduplication
 
-A mesma PR pode ser retornada em mais de uma consulta. A deduplicação usa:
+The same PR can be returned by more than one query. Deduplication uses:
 
 ```txt
 repositoryId:pullRequestId
 ```
 
-Na resposta final ao frontend, o `id` inclui também organização e projeto:
+In the final frontend response, `id` also includes organization and project:
 
 ```txt
 organization:project:repositoryId:pullRequestId
 ```
 
-## Comentários
+## Comments
 
-Comentários são descobertos lendo threads da PR. Comentários deletados são ignorados.
+Comments are discovered by reading PR threads. Deleted comments are ignored.
 
-As threads são consultadas a cada coleta para manter contagens e notificações de comentários atualizadas.
+Threads are queried on every collection to keep comment counts and comment notifications current.
 
-Campos observados:
+Observed fields:
 
 - `thread.comments`
 - `comment.author.id`
@@ -60,16 +60,16 @@ Campos observados:
 - `comment.lastUpdatedDate`
 - `comment.isDeleted`
 
-## Reviewer por Grupo
+## Group Reviewer
 
-A resolução de grupos usa memberships do usuário com direção `up`. Depois tenta comparar reviewers com:
+Group resolution uses user memberships with direction `up`. It then compares reviewers with:
 
 - `group.id`
 - `group.descriptor`
 - `group.displayName`
 - `group.principalName`
 
-Do lado do reviewer, compara:
+On the reviewer side, it compares:
 
 - `reviewer.id`
 - `reviewer.uniqueName`
@@ -77,4 +77,4 @@ Do lado do reviewer, compara:
 - `reviewer.descriptor`
 - `reviewer.name`
 
-Esse ponto pode variar conforme configuração da organização no Azure DevOps. Se houver falso negativo, priorize adicionar fixtures em teste antes de alterar a regra.
+This can vary according to the Azure DevOps organization configuration. If there is a false negative, prioritize adding test fixtures before changing the rule.

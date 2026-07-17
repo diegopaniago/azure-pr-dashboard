@@ -6,20 +6,20 @@ const user = {
   id: 'user-id',
   uniqueName: 'dev@example.com',
   principalName: 'dev@example.com',
-  displayName: 'Dev Usuario'
+  displayName: 'Dev User'
 };
 
 const groups = [{
   id: 'group-id',
   descriptor: 'group-descriptor',
-  displayName: 'Time Plataforma',
-  principalName: 'time-plataforma'
+  displayName: 'Platform Team',
+  principalName: 'platform-team'
 }];
 
 function createPr(overrides = {}) {
   return {
     pullRequestId: 10,
-    title: 'Adicionar validacao',
+    title: 'Add validation',
     status: 'active',
     repository: {
       id: 'repo-1',
@@ -28,18 +28,18 @@ function createPr(overrides = {}) {
     },
     createdBy: {
       id: 'other-user',
-      displayName: 'Outra Pessoa',
+      displayName: 'Other Person',
       uniqueName: 'other@example.com'
     },
     creationDate: '2026-07-10T10:00:00.000Z',
-    sourceRefName: 'refs/heads/feature/validacao',
+    sourceRefName: 'refs/heads/feature/validation',
     targetRefName: 'refs/heads/main',
     reviewers: [],
     ...overrides
   };
 }
 
-test('PullRequestAggregator filtra repositórios por nome ou id', async () => {
+test('PullRequestAggregator filters repositories by name or id', async () => {
   const client = {
     listRepositories: async () => [
       { id: 'repo-1', name: 'api' },
@@ -58,7 +58,7 @@ test('PullRequestAggregator filtra repositórios por nome ou id', async () => {
   assert.deepEqual(repositories, [{ id: 'repo-2', name: 'web' }]);
 });
 
-test('PullRequestAggregator deduplica PRs retornadas por status e janela de tempo', async () => {
+test('PullRequestAggregator deduplicates PRs returned by status and time window', async () => {
   const calls = [];
   const client = {
     listAllPullRequests: async ({ status, queryTimeRangeType }) => {
@@ -80,11 +80,11 @@ test('PullRequestAggregator deduplica PRs retornadas por status e janela de temp
   assert.equal(calls.includes('active:closed'), false);
 });
 
-test('PullRequestAggregator ignora repositórios inacessíveis no Azure DevOps', async () => {
+test('PullRequestAggregator ignores inaccessible Azure DevOps repositories', async () => {
   const client = {
     listAllPullRequests: async ({ repositoryId, status, queryTimeRangeType }) => {
-      if (repositoryId === 'repo-bloqueado') {
-        throw new Error('Azure DevOps respondeu 404 para https://dev.azure.com/org/project/_apis/git/repositories/repo-bloqueado/pullrequests: {"message":"TF401019","typeKey":"GitRepositoryNotFoundException"}');
+      if (repositoryId === 'blocked-repo') {
+        throw new Error('Azure DevOps responded with 404 for https://dev.azure.com/org/project/_apis/git/repositories/blocked-repo/pullrequests: {"message":"TF401019","typeKey":"GitRepositoryNotFoundException"}');
       }
 
       if (status === 'active' && queryTimeRangeType === 'created') {
@@ -102,7 +102,7 @@ test('PullRequestAggregator ignora repositórios inacessíveis no Azure DevOps',
   });
 
   const prs = await aggregator.collectRawPullRequests([
-    { id: 'repo-bloqueado', name: 'sem-permissao' },
+    { id: 'blocked-repo', name: 'no-permission' },
     { id: 'repo-1', name: 'api' }
   ]);
 
@@ -110,25 +110,25 @@ test('PullRequestAggregator ignora repositórios inacessíveis no Azure DevOps',
   assert.equal(prs[0].pullRequestId, 99);
 });
 
-test('PullRequestAggregator inclui PRs por reviewer direto, grupo, comentario e autoria', async () => {
+test('PullRequestAggregator includes PRs by direct reviewer, group, comment, and authorship', async () => {
   const directPr = createPr({
     pullRequestId: 1,
-    reviewers: [{ id: 'user-id', displayName: 'Dev Usuario', uniqueName: 'dev@example.com', vote: 0 }]
+    reviewers: [{ id: 'user-id', displayName: 'Dev User', uniqueName: 'dev@example.com', vote: 0 }]
   });
   const groupPr = createPr({
     pullRequestId: 2,
-    reviewers: [{ id: 'group-id', displayName: 'Time Plataforma', isContainer: true }]
+    reviewers: [{ id: 'group-id', displayName: 'Platform Team', isContainer: true }]
   });
   const commentedPr = createPr({
     pullRequestId: 3
   });
   const authoredPr = createPr({
     pullRequestId: 4,
-    createdBy: { id: 'user-id', displayName: 'Dev Usuario', uniqueName: 'dev@example.com' }
+    createdBy: { id: 'user-id', displayName: 'Dev User', uniqueName: 'dev@example.com' }
   });
   const unrelatedPr = createPr({
     pullRequestId: 5,
-    title: 'Sem envolvimento'
+    title: 'No involvement'
   });
   const threadCalls = [];
 
@@ -173,15 +173,15 @@ test('PullRequestAggregator inclui PRs por reviewer direto, grupo, comentario e 
   assert.deepEqual(threadCalls, [1, 2, 3, 4, 5]);
 });
 
-test('PullRequestAggregator emite PRs relevantes de forma progressiva', async () => {
+test('PullRequestAggregator emits relevant PRs progressively', async () => {
   const calls = [];
   const firstPr = createPr({
     pullRequestId: 1,
-    reviewers: [{ id: 'user-id', displayName: 'Dev Usuario' }]
+    reviewers: [{ id: 'user-id', displayName: 'Dev User' }]
   });
   const secondPr = createPr({
     pullRequestId: 2,
-    reviewers: [{ id: 'group-id', displayName: 'Time Plataforma', isContainer: true }]
+    reviewers: [{ id: 'group-id', displayName: 'Platform Team', isContainer: true }]
   });
 
   const client = {

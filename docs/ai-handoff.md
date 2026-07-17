@@ -1,35 +1,35 @@
-# Handoff para IA
+# AI Handoff
 
-Use este arquivo para retomar contexto rapidamente em futuras sessões de IA. O projeto já possui MVP funcional com backend local, frontend estático, Docker e testes unitários.
+Use this file to quickly restore context in future AI sessions. The project already has a working MVP with a local backend, static frontend, Docker, and unit tests.
 
-## Objetivo do Produto
+## Product Goal
 
-Mostrar Pull Requests do Azure DevOps em que o usuário esteve envolvido nos últimos 60 dias, facilitando a decisão sobre quais PRs precisam de avaliação.
+Show Azure DevOps Pull Requests where the user was involved in the last 60 days, making it easier to decide which PRs need review.
 
-## Stack Atual
+## Current Stack
 
 - Node.js 24
 - Express
 - JavaScript ESM
-- HTML/CSS/JS puro
+- Plain HTML/CSS/JS
 - Docker Compose
-- Testes com `node:test`
+- Tests with `node:test`
 
-## O Que Já Existe
+## What Already Exists
 
-- Cliente Azure DevOps com `fetch` nativo.
-- Autenticação Basic Auth com PAT.
-- Resolução de usuário por e-mail.
-- Resolução de grupos por Graph API.
-- Busca paginada de PRs.
-- Deduplicação.
-- Verificação de reviewer direto, grupo, comentários e autoria.
-- Leitura de threads em cada PR candidata para manter comentários e notificações atualizados.
-- Cache em memória.
-- UI com cards, filtros, tabela, auto-refresh, notificações e carregamento progressivo via Server-Sent Events.
-- Testes unitários principais.
+- Azure DevOps client using native `fetch`.
+- Basic Auth with PAT.
+- User resolution by email.
+- Group resolution through Graph API.
+- Paginated PR search.
+- Deduplication.
+- Direct reviewer, group reviewer, comment, and author checks.
+- Thread reads for each candidate PR to keep comment counts and notifications current.
+- In-memory cache.
+- UI with cards, filters, table, auto-refresh, language switch, notifications, and progressive loading through Server-Sent Events.
+- Main unit tests.
 
-## Como Validar
+## How To Validate
 
 ```bash
 npm test
@@ -37,12 +37,12 @@ docker compose config
 docker compose up --build
 ```
 
-Depois acessar:
+Then open:
 
 ```txt
-http://localhost:3000
+http://localhost:3999
 ```
 
-## Próxima Melhor Evolução
+## Next Best Evolution
 
-A próxima melhoria de performance é adicionar diagnóstico de chamadas ou paralelismo controlado para consultas ao Azure DevOps. Faça isso com cuidado para evitar rate limit e sem remover a atualização recorrente de comentários.
+The next performance improvement is adding call diagnostics or controlled parallelism for Azure DevOps queries. Do this carefully to avoid rate limits and without removing recurring comment refresh.
