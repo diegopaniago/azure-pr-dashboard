@@ -1,5 +1,7 @@
 # Azure PR Dashboard
 
+[![CI](https://github.com/diegopaniago/azure-pr-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/diegopaniago/azure-pr-dashboard/actions/workflows/ci.yml)
+
 Local plain JavaScript, HTML, and CSS dashboard for tracking Azure DevOps Pull Requests where you were involved in the last 60 days. The app runs with Docker, keeps the PAT only in the backend, and helps a developer quickly spot PRs that need attention because of direct review assignment, group/team review assignment, authorship, or comments in threads.
 
 ## Features
