@@ -1,0 +1,18 @@
+{
+  "name": "azure-pr-dashboard",
+  "version": "0.1.0",
+  "description": "Dashboard local para acompanhar Pull Requests do Azure DevOps.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
